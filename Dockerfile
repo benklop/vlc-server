@@ -11,7 +11,6 @@ RUN apk update && \
     addgroup --g "${GID}" -S vlc && \
     adduser -h /opt/vlc-media -s /bin/sh -u "${UID}" -G vlc -S vlc && \
     cd /opt/vlc-media && \
-    wget http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4 && \
     chown vlc:vlc -R /opt/vlc-media
 
 EXPOSE 8080
