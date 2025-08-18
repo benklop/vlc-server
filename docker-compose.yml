@@ -7,8 +7,10 @@ services:
     container_name: vlc
     ports:
       - "8554:8554"
+    environment:
+      - SOURCE_URL=http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4
     command:
-      - "<some-stream-location>"
+      - "${SOURCE_URL}"
       - "--no-audio"
       - "--no-video"
       - "--sout"
