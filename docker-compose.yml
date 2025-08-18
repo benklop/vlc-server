@@ -1,12 +1,18 @@
-version: "3"
+version: '3.8'
 services:
-        vlc:
-                image: lroktu/vlc-server
-                ports: 
-                    - 8554:8554
-                networks:
-                    - vlc-server
-                command:
-                        big_buck_bunny.mp4 --loop :sout=#gather:rtp{sdp=rtsp://:8554/} :network-caching=1500 :sout-all :sout-keep
-networks:
-    vlc-server:
+  vlc:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vlc
+    ports:
+      - "8554:8554"
+    command:
+      - "<some-stream-location>"
+      - "--no-audio"
+      - "--no-video"
+      - "--sout"
+      - "#standard{access=http,mux=ts,dst=:8554}"
+      - "--no-sout-all"
+      - "--sout-keep"
+    restart: unless-stopped
