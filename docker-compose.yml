@@ -3,14 +3,19 @@ services:
   vlc-server:
     build: .
     ports:
-      - "8080:8080"
+      - "${HTTP_PORT:-8080}:${HTTP_PORT:-8080}"
+    env_file:
+      - .env
     environment:
       - RACK_ENV=production
+      # Server configuration (can be overridden in .env file)
+      - HTTP_PORT=${HTTP_PORT:-8080}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1,0.0.0.0}
     networks:
       - vlc-server
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:${HTTP_PORT:-8080}/health"]
       interval: 30s
       timeout: 10s
       retries: 3

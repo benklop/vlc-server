@@ -63,6 +63,11 @@ rake server:watch
 # Using Docker Compose (recommended)
 rake docker:up
 
+# With custom environment file
+cp .env.example .env
+# Edit .env with your settings
+rake docker:up
+
 # Or build manually
 rake docker:build
 docker run -p 8080:8080 vlc-streaming-server
@@ -76,6 +81,37 @@ rake spec
 
 # Test server endpoints (requires running server)
 rake test:endpoints
+```
+
+## Configuration
+
+The server can be configured using environment variables or a `.env` file for Docker deployments.
+
+### Environment Variables
+
+- `HTTP_PORT` - Port to bind the server to (default: `8080`)
+- `ALLOWED_HOSTS` - Comma-separated list of allowed hosts for host authorization (default: `localhost,127.0.0.1,0.0.0.0,example.org`)
+
+### Environment File
+
+For Docker deployments, copy `.env.example` to `.env` and customize:
+
+```bash
+cp .env.example .env
+# Edit .env with your configuration
+```
+
+### Examples
+
+```bash
+# Run on port 3000
+HTTP_PORT=3000 rake server:dev
+
+# Allow additional hosts
+ALLOWED_HOSTS="localhost,127.0.0.1,myserver.com" rake server:dev
+
+# Docker with custom configuration
+HTTP_PORT=3000 ALLOWED_HOSTS="localhost,127.0.0.1,docker.local" rake docker:up
 ```
 
 ## API Endpoints
@@ -166,10 +202,6 @@ This application uses the standard Ruby web stack:
 - **`config/puma.rb`** - Production Puma settings (multiple workers, optimized for performance)
 - **`config/puma.development.rb`** - Development Puma settings (single worker, easier debugging)
 - **`docker/puma.rb`** - Docker-optimized settings (container-specific logging and resource limits)
-
-## Configuration
-
-The server listens on port 8080 by default. You can modify this in `lib/vlc_streaming_app.rb` if needed.
 
 ## Dependencies
 

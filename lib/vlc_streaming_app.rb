@@ -3,13 +3,14 @@ require 'concurrent'
 require_relative 'vlc_streamer'
 
 class VLCStreamingApp < Sinatra::Base
-  # Configure Sinatra
-  set :port, 8080
+  # Configure Sinatra port from environment variable
+  set :port, ENV.fetch('HTTP_PORT', '8080').to_i
   set :bind, '0.0.0.0'
 
   # Configure host authorization for Sinatra 4.x
-  # Allow requests from any host (for testing and Docker compatibility)
-  set :protection, :allowed_hosts => ["localhost", "127.0.0.1", "0.0.0.0", "example.org"]
+  # Allow requests from hosts specified in environment variable
+  allowed_hosts = ENV.fetch('ALLOWED_HOSTS', 'localhost,127.0.0.1,0.0.0.0,example.org').split(',').map(&:strip)
+  set :protection, :allowed_hosts => allowed_hosts
 
   # Global hash to track VLC processes for each client
   VLC_PROCESSES = Concurrent::Hash.new
