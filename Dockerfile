@@ -1,4 +1,4 @@
-FROM ruby:3.2.2-alpine
+FROM ruby:3.4.3-alpine
 
 ARG UID="1000"
 ARG GID="1000"
