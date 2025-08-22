@@ -1,12 +1,20 @@
-version: "3"
+version: "3.8"
 services:
-        vlc:
-                image: lroktu/vlc-server
-                ports: 
-                    - 8554:8554
-                networks:
-                    - vlc-server
-                command:
-                        big_buck_bunny.mp4 --loop :sout=#gather:rtp{sdp=rtsp://:8554/} :network-caching=1500 :sout-all :sout-keep
+  vlc-server:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - RACK_ENV=production
+    networks:
+      - vlc-server
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
 networks:
-    vlc-server:
+  vlc-server:
+    driver: bridge

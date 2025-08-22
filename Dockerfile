@@ -1,26 +1,40 @@
-FROM alpine:latest
+FROM ruby:3.2.2-alpine
 
 ARG UID="1000"
 ARG GID="1000"
 
+# Install system dependencies
 RUN apk update && \
-    apk add wget && \
-    apk add vlc && \
-    rm -rf /var/cache/apk/* && \
-    mkdir -p /opt/vlc-media && \
-    addgroup --g "${GID}" -S vlc && \
-    adduser -h /opt/vlc-media -s /bin/sh -u "${UID}" -G vlc -S vlc && \
-    cd /opt/vlc-media && \
-    chown vlc:vlc -R /opt/vlc-media
+    apk add --no-cache \
+    build-base \
+    vlc \
+    vlc-dev \
+    && rm -rf /var/cache/apk/*
 
+# Create user and app directory
+RUN addgroup --g "${GID}" -S appuser && \
+    adduser -h /app -s /bin/sh -u "${UID}" -G appuser -S appuser && \
+    mkdir -p /app && \
+    chown appuser:appuser -R /app
+
+# Set working directory
+WORKDIR /app
+
+# Copy Gemfile and install dependencies
+COPY Gemfile* ./
+RUN bundle install --without development
+
+# Copy application code
+COPY . .
+
+# Ensure proper ownership
+RUN chown -R appuser:appuser /app
+
+# Switch to non-root user
+USER appuser
+
+# Expose port
 EXPOSE 8080
-EXPOSE 554
-EXPOSE 8554
 
-USER "vlc"
-WORKDIR /opt/vlc-media
-
-ENTRYPOINT [ "/usr/bin/cvlc" ]
-
-
-
+# Start the application
+CMD ["bundle", "exec", "puma", "-C", "docker/puma.rb"]
