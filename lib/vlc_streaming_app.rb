@@ -5,7 +5,7 @@ require_relative 'vlc_process_manager'
 require_relative 'routes/streaming'
 require_relative 'routes/health'
 require_relative 'routes/home'
-require_relative 'routes/playlist'
+require_relative 'routes/youtube'
 
 class VLCStreamingApp < Sinatra::Base
   # Configure Sinatra to bind to all interfaces
@@ -25,7 +25,7 @@ class VLCStreamingApp < Sinatra::Base
   register Routes::Streaming
   register Routes::Health
   register Routes::Home
-  register Routes::Playlist
+  register Routes::Youtube
 
   # Class methods for cleanup (accessible from class-level blocks)
   class << self
