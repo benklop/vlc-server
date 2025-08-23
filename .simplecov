@@ -3,9 +3,6 @@ SimpleCov.configure do
   # Minimum coverage thresholds
   minimum_coverage line: 85
 
-  # Refuse to merge results if they're older than 10 minutes
-  maximum_age 600
-
   # Output formatters
   if ENV['CI']
     # On CI, output LCOV format for external tools

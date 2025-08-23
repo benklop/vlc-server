@@ -50,25 +50,25 @@ vlc-server/
 
 ```bash
 # Install dependencies
-rake setup:dev
+rake setup
 
 # Start development server
-rake server:dev
+rake server
 
-# Or with auto-reload
-rake server:watch
+# Start production server
+rake prod
 ```
 
 ### Docker Deployment
 
 ```bash
 # Using Docker Compose (recommended)
-rake docker:up
+rake docker
 
 # With custom environment file
 cp .env.example .env
 # Edit .env with your settings
-rake docker:up
+rake docker
 
 # Or build manually
 rake docker:build
@@ -197,36 +197,11 @@ Returns an HTML page with usage instructions.
 
 ## Available Rake Tasks
 
-### Server Management
-
-- `rake server:dev` - Start development server (Sinatra built-in)
-- `rake server:puma` - Start development server with Puma
-- `rake server:watch` - Start server with auto-reload
-- `rake server:prod` - Start production server with Puma
-
-### Testing
-
-- `rake spec` - Run all RSpec tests
-- `rake spec:unit` - Run unit tests only
-- `rake spec:coverage` - Run tests with coverage report
-- `rake test:endpoints` - Test server endpoints (requires running server)
-
-### Docker
-
-- `rake docker:build` - Build Docker image
-- `rake docker:up` - Start with Docker Compose
-- `rake docker:down` - Stop Docker Compose
-
-### Setup
-
-- `rake setup:install` - Install dependencies
-- `rake setup:dev` - Complete development setup
-
-### Information
-
-- `rake info:project` - Show project information
-- `rake info:tasks` - List all available tasks
-- `rake info:coverage` - Show test coverage summary
+- `rake server` - Start development server
+- `rake prod` - Start production server
+- `rake spec` - Run tests
+- `rake docker` - Start with Docker Compose
+- `rake setup` - Install dependencies
 
 ## Web Server Architecture
 
