@@ -6,6 +6,9 @@ A Ruby-based web server that accepts video URLs and streams them back to clients
 
 - **Dynamic streaming**: Accept any video URL via HTTP parameter
 - **YouTube playlist support**: Convert YouTube playlists to M3U format for streaming
+- **YouTube channel videos**: Stream videos from any YouTube channel with filtering options
+- **YouTube live stream search**: Find and stream live YouTube content with advanced filtering
+- **Named playlists and channels**: Configure shortcuts via environment variables
 - **Automatic cleanup**: VLC processes are stopped when clients disconnect
 - **Health monitoring**: Built-in health check endpoint
 - **Multiple concurrent streams**: Support for multiple clients streaming different videos
@@ -15,41 +18,12 @@ A Ruby-based web server that accepts video URLs and streams them back to clients
 
 ## Technology Stack
 
-- **Ruby 3.2.2** with Sinatra web framework
+- **Ruby 3.4.3** with Sinatra web framework
 - **VLC Media Player** for video processing and streaming
 - **Puma** web server for production
 - **RSpec** for testing
 - **Docker** for containerization
-
-## Project Structure
-
-```text
-vlc-server/
-├── bin/
-│   └── vlc-streaming-server    # Executable application entry point
-├── config/
-│   └── puma.rb                 # Unified Puma configuration
-├── docker/
-│   └── healthcheck.sh          # Health check script for Docker
-├── lib/
-│   ├── routes/                 # Modular route definitions
-│   │   ├── base.rb            # Shared route functionality
-│   │   ├── streaming.rb       # Video streaming endpoint
-│   │   ├── playlist.rb        # YouTube playlist endpoint
-│   │   ├── health.rb          # Health check endpoint
-│   │   └── home.rb            # Homepage endpoint
-│   ├── vlc_streamer.rb         # VLC process management
-│   ├── vlc_streaming_app.rb    # Sinatra application
-│   └── vlc_process_manager.rb  # Process tracking and cleanup
-├── views/
-│   └── index.erb               # Homepage template
-├── spec/                       # RSpec tests
-├── config.ru                   # Rack configuration
-├── Rakefile                    # Task definitions
-├── Dockerfile                  # Container build
-├── docker-compose.yml       # Docker Compose setup
-└── .tool-versions           # Ruby version specification
-```
+- **YouTube Data API v3** for playlist and live stream functionality
 
 ## Quick Start
 
@@ -69,7 +43,7 @@ rake prod
 ### Docker Deployment
 
 ```bash
-# Using Docker Compose (recommended)
+# Using Docker Compose (recommended) - uses pre-built image
 rake docker
 
 # With custom environment file
@@ -77,37 +51,33 @@ cp .env.example .env
 # Edit .env with your settings
 rake docker
 
-# Or build manually
-rake docker:build
+# Or build locally from source
+docker build -t vlc-streaming-server .
 docker run -p 8080:8080 vlc-streaming-server
 ```
 
 ### Docker Compose Environment Variables
 
-The `docker-compose.yml` works out of the box without any environment variables. To add configuration:
+The `docker-compose.yml` uses a pre-built image from GitHub Container Registry and works out of the box without any environment variables. To add configuration:
 
 **Option 1: Use .env file (recommended for many variables)**
+
 ```bash
 cp .env.example .env
 # Edit .env with your actual values
 docker-compose up
 ```
 
-**Option 2: Use docker-compose.override.yml (recommended for custom setups)**
-```bash
-cp docker-compose.override.yml.example docker-compose.override.yml
-# Edit the override file with your configuration
-docker-compose up  # Automatically loads override file
-```
+**Option 2: Set host environment variables**
 
-**Option 3: Set host environment variables**
 ```bash
 export YOUTUBE_API_KEY="your_key"
 export PLAYLIST_FAVORITES="PL123..."
 docker-compose up  # Inherits from host environment
 ```
 
-**Option 4: Inline environment variables**
+**Option 3: Inline environment variables**
+
 ```bash
 YOUTUBE_API_KEY="your_key" PLAYLIST_FAVORITES="PL123..." docker-compose up
 ```
@@ -143,14 +113,8 @@ PLAYLIST_STUDY_MUSIC=PL123456789
 # Run all tests
 rake spec
 
-# Run tests with coverage report
-rake spec:coverage
-
-# Test server endpoints (requires running server)
-rake test:endpoints
-
-# View coverage summary
-rake info:coverage
+# View coverage report (generated after running tests)
+open coverage/index.html
 ```
 
 ## Configuration
@@ -167,18 +131,22 @@ The server can be configured using environment variables or a `.env` file for Do
 
 #### YouTube Integration
 
-- `YOUTUBE_API_KEY` - YouTube Data API v3 key for playlist functionality (required for `/playlist` endpoint)
+- `YOUTUBE_API_KEY` - YouTube Data API v3 key for playlist functionality (required for `/youtube/playlist` endpoint)
   - Get your API key from [Google Cloud Console](https://console.cloud.google.com/)
   - Enable the YouTube Data API v3 for your project
 - `PLAYLIST_*` - Named playlist environment variables (optional)
   - Use any name after `PLAYLIST_` - it becomes the endpoint path
-  - Examples: `PLAYLIST_FAVORITES` → `/playlist/favorites`, `PLAYLIST_ROCK` → `/playlist/rock`
+  - Examples: `PLAYLIST_FAVORITES` → `/youtube/playlist/favorites`, `PLAYLIST_ROCK` → `/youtube/playlist/rock`
   - Can be playlist IDs (e.g., `PL6NdkXsPL07Il2hEQGcLI4dg_LTg7xA2L`) or full YouTube URLs
+- `CHANNEL_*` - Named channel environment variables (optional)
+  - Use any name after `CHANNEL_` - it becomes the endpoint path
+  - Examples: `CHANNEL_NEWS` → `/youtube/channel/named/news`, `CHANNEL_MUSIC` → `/youtube/channel/named/music`
+  - Can be channel IDs, usernames, or full YouTube channel URLs
 
 #### Performance Tuning
 
-- `PUMA_THREADS` - Number of threads per Puma process for concurrent requests (default: `2` dev, `5` prod, `10` Docker)
-- `WEB_CONCURRENCY` - Number of Puma worker processes (default: `2` prod, `0` Docker for single-mode)
+- `PUMA_THREADS` - Number of threads per Puma process for concurrent requests (default: `3` dev, `10` prod/Docker)
+- `WEB_CONCURRENCY` - Number of Puma worker processes (default: `1` dev, `0` prod/Docker for single-mode)
 
 #### Streaming Configuration
 
@@ -209,19 +177,16 @@ cp .env.example .env
 
 ```bash
 # Run on port 3000
-PORT=3000 rake server:dev
+PORT=3000 rake server
 
 # Allow additional hosts
-ALLOWED_HOSTS="localhost,127.0.0.1,myserver.com" rake server:dev
-
-# Increase concurrent connections for high load
-PUMA_THREADS=20 rake server:puma
+ALLOWED_HOSTS="localhost,127.0.0.1,myserver.com" rake server
 
 # With YouTube API key for playlist support
-YOUTUBE_API_KEY="your_api_key_here" rake server:dev
+YOUTUBE_API_KEY="your_api_key_here" rake server
 
 # Docker with custom configuration
-PORT=3000 ALLOWED_HOSTS="localhost,127.0.0.1,docker.local" rake docker:up
+PORT=3000 ALLOWED_HOSTS="localhost,127.0.0.1,docker.local" rake docker
 
 # High-performance Docker deployment with YouTube support
 docker run -p 8080:8080 \
@@ -282,7 +247,7 @@ ffplay "http://localhost:8080/stream?video_url=https://example.com/video.mp4"
 
 ### YouTube Playlist to M3U
 
-**Endpoint:** `GET /playlist?playlist=<PLAYLIST_ID_OR_URL>`
+**Endpoint:** `GET /youtube/playlist?playlist=<PLAYLIST_ID_OR_URL>`
 
 **Parameters:**
 
@@ -297,16 +262,16 @@ ffplay "http://localhost:8080/stream?video_url=https://example.com/video.mp4"
 
 ```bash
 # With playlist ID
-curl "http://localhost:8080/playlist?playlist=PL6NdkXsPL07Il2hEQGcLI4dg_LTg7xA2L" --output playlist.m3u
+curl "http://localhost:8080/youtube/playlist?playlist=PL6NdkXsPL07Il2hEQGcLI4dg_LTg7xA2L" --output playlist.m3u
 
 # With YouTube URL
-curl "http://localhost:8080/playlist?url=https://www.youtube.com/watch?v=jfKfPfyJRdk&list=PL6NdkXsPL07Il2hEQGcLI4dg_LTg7xA2L" --output playlist.m3u
+curl "http://localhost:8080/youtube/playlist?url=https://www.youtube.com/watch?v=jfKfPfyJRdk&list=PL6NdkXsPL07Il2hEQGcLI4dg_LTg7xA2L" --output playlist.m3u
 
 # Play M3U playlist directly with VLC
-vlc "http://localhost:8080/playlist?playlist=PL6NdkXsPL07Il2hEQGcLI4dg_LTg7xA2L"
+vlc "http://localhost:8080/youtube/playlist?playlist=PL6NdkXsPL07Il2hEQGcLI4dg_LTg7xA2L"
 
 # Save and play locally
-curl "http://localhost:8080/playlist?playlist=PL6NdkXsPL07Il2hEQGcLI4dg_LTg7xA2L" -o playlist.m3u && vlc playlist.m3u
+curl "http://localhost:8080/youtube/playlist?playlist=PL6NdkXsPL07Il2hEQGcLI4dg_LTg7xA2L" -o playlist.m3u && vlc playlist.m3u
 ```
 
 **Response:** Returns an M3U playlist file where each entry streams through the `/stream` endpoint. The playlist automatically handles:
@@ -317,7 +282,7 @@ curl "http://localhost:8080/playlist?playlist=PL6NdkXsPL07Il2hEQGcLI4dg_LTg7xA2L
 
 ### Named Playlists
 
-**Endpoints:** `GET /playlist/{name}` where `{name}` is any custom name you define
+**Endpoints:** `GET /youtube/playlist/{name}` where `{name}` is any custom name you define
 
 **Configuration:** Set environment variables `PLAYLIST_{NAME}` with playlist IDs or URLs
 
@@ -330,13 +295,13 @@ export PLAYLIST_ROCK="https://www.youtube.com/watch?v=test&list=PLrCZV99gFgI_fAd
 export PLAYLIST_STUDY_MUSIC="PLrCZV99gFgI_another_playlist_id"
 
 # Access named playlists
-curl "http://localhost:8080/playlist/favorites" -o favorites.m3u
-curl "http://localhost:8080/playlist/rock" -o rock.m3u
-curl "http://localhost:8080/playlist/study_music" -o study.m3u
-vlc "http://localhost:8080/playlist/favorites"
+curl "http://localhost:8080/youtube/playlist/favorites" -o favorites.m3u
+curl "http://localhost:8080/youtube/playlist/rock" -o rock.m3u
+curl "http://localhost:8080/youtube/playlist/study_music" -o study.m3u
+vlc "http://localhost:8080/youtube/playlist/favorites"
 
 # List all available playlists
-curl "http://localhost:8080/playlists"
+curl "http://localhost:8080/youtube/playlists"
 
 # Docker with named playlists (using .env file - recommended)
 cp .env.example .env
@@ -358,6 +323,73 @@ docker run -p 8080:8080 \
 - No need to remember or look up playlist IDs
 - Easier integration with media players and automation
 - Clean, predictable URLs for bookmarking
+
+### YouTube Channel Videos
+
+**Endpoint:** `GET /youtube/channel/{channel_id_or_username}`
+
+**Parameters:**
+
+- `channel` (required): YouTube channel ID, username, or channel URL
+- `max_results` (optional): Maximum number of videos (1-200, default: 50)
+- `order` (optional): Sort order - `date`, `relevance`, `title`, `viewCount`, `rating` (default: `date`)
+- `live_only` (optional): Set to `true` to include only live streams
+- `type` (optional): Content type - `video`, `channel`, `playlist` (default: `video`)
+
+**Examples:**
+
+```bash
+# Get latest videos from a channel
+curl "http://localhost:8080/youtube/channel/UC_x5XG1OV2P6uZZ5FSM9Ttw" -o channel.m3u
+
+# Get live streams only
+curl "http://localhost:8080/youtube/channel/UC_x5XG1OV2P6uZZ5FSM9Ttw?live_only=true" -o live.m3u
+
+# Get top 100 most viewed videos
+curl "http://localhost:8080/youtube/channel/UC_x5XG1OV2P6uZZ5FSM9Ttw?max_results=100&order=viewCount" -o popular.m3u
+
+# Named channels (configured via environment variables)
+export CHANNEL_NEWS="UC_x5XG1OV2P6uZZ5FSM9Ttw"
+curl "http://localhost:8080/youtube/channel/named/news" -o news.m3u
+
+# List available named channels
+curl "http://localhost:8080/youtube/channels"
+```
+
+### YouTube Live Stream Search
+
+**Endpoint:** `GET /youtube/live/search`
+
+**Parameters:**
+
+- `max_results` (optional): Maximum number of streams (1-200, default: 50)
+- `min_subscribers` (optional): Minimum channel subscriber count (default: 100,000)
+- `region_code` (optional): Two-letter country code (default: US)
+- `language` (optional): Two-letter language code (default: en)
+- `order` (optional): Sort order - `date`, `rating`, `relevance`, `title`, `viewCount` (default: `relevance`)
+
+**Canned Searches:**
+
+- `/youtube/live/english_popular` - Popular English live streams
+- `/youtube/live/english_gaming` - English gaming streams
+- `/youtube/live/english_news` - English news streams
+- `/youtube/live/english_music` - English music streams
+
+**Examples:**
+
+```bash
+# Popular live streams
+curl "http://localhost:8080/youtube/live/english_popular" -o popular_live.m3u
+
+# Custom search for high-subscriber gaming streams
+curl "http://localhost:8080/youtube/live/search?min_subscribers=500000&max_results=20" -o gaming.m3u
+
+# Get search results as JSON
+curl "http://localhost:8080/youtube/live/search.json?max_results=10"
+
+# List available canned searches
+curl "http://localhost:8080/youtube/live/searches"
+```
 
 ### Health Check
 
@@ -398,39 +430,13 @@ This application uses the standard Ruby web stack:
 
 ### Configuration Files
 
-- **`config/puma.rb`** - Production Puma settings (multiple workers, optimized for performance)
-- **`config/puma.development.rb`** - Development Puma settings (single worker, easier debugging)
-- **`docker/puma.rb`** - Docker-optimized settings (container-specific logging and resource limits)
+- **`config/puma.rb`** - Puma settings for all environments (development and production)
+- **`config.ru`** - Rack configuration file (required by Puma)
+- **`docker/healthcheck.sh`** - Docker health check script
 
 ## CI/CD & Docker Registry
 
 This project includes GitHub Actions workflows for automated testing and Docker image publishing.
-
-### Docker Image Registry
-
-Pre-built Docker images are automatically published to GitHub Container Registry:
-
-```bash
-# Pull the latest image
-docker pull ghcr.io/benklop/vlc-video-proxy:latest
-
-# Run from registry
-docker run -p 8080:8080 ghcr.io/benklop/vlc-video-proxy:latest
-
-# Use in docker-compose.yml
-services:
-  vlc-server:
-    image: ghcr.io/benklop/vlc-video-proxy:latest
-    ports:
-      - "8080:8080"
-```
-
-### Available Image Tags
-
-- `latest` - Latest stable release from master branch
-- `v1.0.0` - Specific version releases (semantic versioning)
-- `master` - Latest commit from master branch
-- `pr-123` - Pull request builds (for testing)
 
 ### GitHub Workflows
 
@@ -460,7 +466,7 @@ When contributing:
 ## Dependencies
 
 - VLC Media Player (cvlc command)
-- Ruby (version specified in `.tool-versions`)
+- Ruby (version specified in `.tool-versions` - currently 3.4.3)
 - Bundler for dependency management
 
 ## Development
@@ -469,10 +475,10 @@ When contributing:
 
 ```bash
 # Setup development environment
-rake setup:dev
+rake setup
 
-# Start server with auto-reload
-rake server:watch
+# Start development server
+rake server
 
 # Run tests
 rake spec
