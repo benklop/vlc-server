@@ -30,13 +30,7 @@ module Routes
 
           {
             available_playlists: playlists,
-            count: playlists.length,
-            examples: [
-              'GET /playlist/favorites - if PLAYLIST_FAVORITES is set',
-              'GET /playlist/rock - if PLAYLIST_ROCK is set',
-              'GET /playlist/chill - if PLAYLIST_CHILL is set'
-            ],
-            note: 'Only named playlists are supported. Use environment variables like PLAYLIST_FAVORITES, PLAYLIST_ROCK, etc.'
+            count: playlists.length
           }.to_json
         end
 
@@ -44,11 +38,6 @@ module Routes
         app.get '/playlist/:name' do
           playlist_name = params[:name].upcase
           env_var = "PLAYLIST_#{playlist_name}"
-
-          # Explicitly reject numbered playlists
-          if playlist_name.match?(/^\d+$/)
-            halt 400, "Numbered playlists are not supported. Use named playlists instead (e.g., PLAYLIST_FAVORITES)."
-          end
 
           playlist_param = ENV[env_var]
 

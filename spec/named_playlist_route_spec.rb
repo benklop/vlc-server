@@ -25,8 +25,6 @@ RSpec.describe 'Named Playlist Routes' do
         json_response = JSON.parse(last_response.body)
         expect(json_response['available_playlists']).to be_empty
         expect(json_response['count']).to eq(0)
-        expect(json_response['examples']).to be_an(Array)
-        expect(json_response['note']).to include('Only named playlists are supported')
       end
     end
 
