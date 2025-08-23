@@ -9,6 +9,7 @@ RUN apk update && \
     build-base \
     vlc \
     vlc-dev \
+    wget \
     && rm -rf /var/cache/apk/*
 
 # Create user and app directory
@@ -26,6 +27,10 @@ RUN bundle install --without development
 
 # Copy application code
 COPY . .
+
+# Copy and setup healthcheck script
+COPY docker/healthcheck.sh /usr/local/bin/healthcheck
+RUN chmod +x /usr/local/bin/healthcheck
 
 # Ensure proper ownership
 RUN chown -R appuser:appuser /app
