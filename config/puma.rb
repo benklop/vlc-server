@@ -19,11 +19,3 @@ plugin :tmp_restart
 
 # Logging
 stdout_redirect '/dev/stdout', '/dev/stderr', true if ENV['RACK_ENV'] == 'production'
-
-on_worker_boot do
-  # Worker specific setup for fork-safe connections
-end
-
-on_restart do
-  puts 'Puma is restarting...'
-end
