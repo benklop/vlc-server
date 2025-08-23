@@ -82,6 +82,61 @@ rake docker:build
 docker run -p 8080:8080 vlc-streaming-server
 ```
 
+### Docker Compose Environment Variables
+
+The `docker-compose.yml` works out of the box without any environment variables. To add configuration:
+
+**Option 1: Use .env file (recommended for many variables)**
+```bash
+cp .env.example .env
+# Edit .env with your actual values
+docker-compose up
+```
+
+**Option 2: Use docker-compose.override.yml (recommended for custom setups)**
+```bash
+cp docker-compose.override.yml.example docker-compose.override.yml
+# Edit the override file with your configuration
+docker-compose up  # Automatically loads override file
+```
+
+**Option 3: Set host environment variables**
+```bash
+export YOUTUBE_API_KEY="your_key"
+export PLAYLIST_FAVORITES="PL123..."
+docker-compose up  # Inherits from host environment
+```
+
+**Option 4: Inline environment variables**
+```bash
+YOUTUBE_API_KEY="your_key" PLAYLIST_FAVORITES="PL123..." docker-compose up
+```
+
+**Configuration approaches:**
+
+```yaml
+# .env file approach (in docker-compose.override.yml)
+env_file:
+  - .env
+
+# Direct environment variables
+environment:
+  - YOUTUBE_API_KEY=your_key_here
+  - PLAYLIST_FAVORITES=PL123...
+
+# Inherit from host environment
+environment:
+  - YOUTUBE_API_KEY
+  - PLAYLIST_FAVORITES
+```
+
+For named playlists, set any `PLAYLIST_*` variable using any of the above methods:
+```bash
+PLAYLIST_FAVORITES=PL6NdkXsPL07Il2hEQGcLI4dg_LTg7xA2L
+PLAYLIST_ROCK=PLrCZV99gFgI_fAd8XJ14-3LxpJ3L_Klwg
+PLAYLIST_STUDY_MUSIC=PL123456789
+```
+
 ### Testing
 
 ```bash
@@ -115,6 +170,10 @@ The server can be configured using environment variables or a `.env` file for Do
 - `YOUTUBE_API_KEY` - YouTube Data API v3 key for playlist functionality (required for `/playlist` endpoint)
   - Get your API key from [Google Cloud Console](https://console.cloud.google.com/)
   - Enable the YouTube Data API v3 for your project
+- `PLAYLIST_*` - Named playlist environment variables (optional)
+  - Use any name after `PLAYLIST_` - it becomes the endpoint path
+  - Examples: `PLAYLIST_FAVORITES` → `/playlist/favorites`, `PLAYLIST_ROCK` → `/playlist/rock`
+  - Can be playlist IDs (e.g., `PL6NdkXsPL07Il2hEQGcLI4dg_LTg7xA2L`) or full YouTube URLs
 
 #### Performance Tuning
 
@@ -255,6 +314,50 @@ curl "http://localhost:8080/playlist?playlist=PL6NdkXsPL07Il2hEQGcLI4dg_LTg7xA2L
 - Pagination for large playlists
 - Filtering out deleted/private videos
 - Proper URL encoding for streaming
+
+### Named Playlists
+
+**Endpoints:** `GET /playlist/{name}` where `{name}` is any custom name you define
+
+**Configuration:** Set environment variables `PLAYLIST_{NAME}` with playlist IDs or URLs
+
+**Examples:**
+
+```bash
+# Set named playlists
+export PLAYLIST_FAVORITES="PL6NdkXsPL07Il2hEQGcLI4dg_LTg7xA2L"
+export PLAYLIST_ROCK="https://www.youtube.com/watch?v=test&list=PLrCZV99gFgI_fAd8XJ14-3LxpJ3L_Klwg"
+export PLAYLIST_STUDY_MUSIC="PLrCZV99gFgI_another_playlist_id"
+
+# Access named playlists
+curl "http://localhost:8080/playlist/favorites" -o favorites.m3u
+curl "http://localhost:8080/playlist/rock" -o rock.m3u
+curl "http://localhost:8080/playlist/study_music" -o study.m3u
+vlc "http://localhost:8080/playlist/favorites"
+
+# List all available playlists
+curl "http://localhost:8080/playlists"
+
+# Docker with named playlists (using .env file - recommended)
+cp .env.example .env
+# Edit .env with your configuration
+docker-compose up
+
+# Or pass variables directly
+docker run -p 8080:8080 \
+  -e YOUTUBE_API_KEY="your_api_key" \
+  -e PLAYLIST_FAVORITES="PL6NdkXsPL07Il2hEQGcLI4dg_LTg7xA2L" \
+  -e PLAYLIST_ROCK="PLrCZV99gFgI_fAd8XJ14-3LxpJ3L_Klwg" \
+  vlc-streaming-server
+```
+
+**Benefits:**
+
+- Descriptive, memorable playlist names
+- No limit on number of playlists
+- No need to remember or look up playlist IDs
+- Easier integration with media players and automation
+- Clean, predictable URLs for bookmarking
 
 ### Health Check
 

@@ -64,6 +64,43 @@
     </div>
   </div>
 
+  <div class="endpoint">
+    <h2>Named Playlists</h2>
+    <p>Access custom-named playlists via <code>PLAYLIST_*</code> environment variables. No limit on number of playlists!</p>
+
+    <div class="example">
+      <strong>List all playlists:</strong> <code>GET /playlists</code>
+      <div class="code">
+        curl "http://localhost:<%= request.port %>/playlists"
+      </div>
+    </div>
+
+    <div class="example">
+      <strong>Access named playlists:</strong> <code>GET /playlist/{name}</code>
+      <div class="code">
+        curl "http://localhost:<%= request.port %>/playlist/favorites"<br>
+        curl "http://localhost:<%= request.port %>/playlist/rock"<br>
+        curl "http://localhost:<%= request.port %>/playlist/study_music"
+      </div>
+    </div>
+
+    <div class="example">
+      <strong>Play named playlist with VLC:</strong>
+      <div class="code">
+        vlc "http://localhost:<%= request.port %>/playlist/favorites"
+      </div>
+    </div>
+
+    <div class="example">
+      <strong>Configuration:</strong>
+      <div class="code">
+        export PLAYLIST_FAVORITES="PL6NdkXsPL07Il2hEQGcLI4dg_LTg7xA2L"<br>
+        export PLAYLIST_ROCK="https://www.youtube.com/watch?v=test&list=PLrCZV99gFgI_fAd8XJ14-3LxpJ3L_Klwg"<br>
+        export PLAYLIST_STUDY_MUSIC="PLrCZV99gFgI_another_playlist_id"
+      </div>
+    </div>
+  </div>
+
   <h2>Health Check</h2>
   <p><a href="/health">Check server status</a></p>
 
