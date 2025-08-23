@@ -14,6 +14,14 @@ namespace :spec do
     t.pattern = 'spec/*_spec.rb'
     t.rspec_opts = '--require spec_helper'
   end
+
+  desc "Run tests with coverage report"
+  task :coverage do
+    puts "Running tests with coverage analysis..."
+    system("bundle exec rspec")
+    puts "\nCoverage report generated in coverage/index.html"
+    puts "Open coverage/index.html in your browser to view detailed coverage"
+  end
 end
 
 # Server tasks
@@ -203,5 +211,24 @@ namespace :info do
   desc "Show available rake tasks"
   task :tasks do
     system('rake -T')
+  end
+
+  desc "Show test coverage information"
+  task :coverage do
+    if File.exist?('coverage/.last_run.json')
+      require 'json'
+      last_run = JSON.parse(File.read('coverage/.last_run.json'))
+      line_coverage = last_run.dig('result', 'line')
+      branch_coverage = last_run.dig('result', 'branch')
+      
+      puts "Test Coverage Summary"
+      puts "===================="
+      puts "Line Coverage:   #{line_coverage}%" if line_coverage
+      puts "Branch Coverage: #{branch_coverage}%" if branch_coverage
+      puts ""
+      puts "Full report: coverage/index.html"
+    else
+      puts "No coverage data found. Run 'rake spec:coverage' first."
+    end
   end
 end

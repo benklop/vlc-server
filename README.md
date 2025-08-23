@@ -9,7 +9,7 @@ A Ruby-based web server that accepts video URLs and streams them back to clients
 - **Health monitoring**: Built-in health check endpoint
 - **Multiple concurrent streams**: Support for multiple clients streaming different videos
 - **Docker support**: Easy deployment with Docker and Docker Compose
-- **Full test coverage**: RSpec tests for all components
+- **Full test coverage**: RSpec tests for all components with 97%+ coverage
 - **Rake tasks**: Convenient development and deployment tasks
 
 ## Technology Stack
@@ -81,8 +81,14 @@ docker run -p 8080:8080 vlc-streaming-server
 # Run all tests
 rake spec
 
+# Run tests with coverage report
+rake spec:coverage
+
 # Test server endpoints (requires running server)
 rake test:endpoints
+
+# View coverage summary
+rake info:coverage
 ```
 
 ## Configuration
@@ -198,10 +204,11 @@ Returns an HTML page with usage instructions.
 - `rake server:watch` - Start server with auto-reload
 - `rake server:prod` - Start production server with Puma
 
-### Task Testing
+### Testing
 
 - `rake spec` - Run all RSpec tests
 - `rake spec:unit` - Run unit tests only
+- `rake spec:coverage` - Run tests with coverage report
 - `rake test:endpoints` - Test server endpoints (requires running server)
 
 ### Docker
@@ -219,6 +226,7 @@ Returns an HTML page with usage instructions.
 
 - `rake info:project` - Show project information
 - `rake info:tasks` - List all available tasks
+- `rake info:coverage` - Show test coverage summary
 
 ## Web Server Architecture
 

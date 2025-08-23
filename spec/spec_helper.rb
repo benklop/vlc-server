@@ -1,3 +1,7 @@
+# Start SimpleCov before loading application code
+require 'simplecov'
+SimpleCov.start
+
 require 'rspec'
 require 'rack/test'
 require_relative '../lib/vlc_streaming_app'

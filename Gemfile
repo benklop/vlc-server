@@ -12,4 +12,5 @@ group :development, :test do
   gem 'rspec', '~> 3.13'
   gem 'rack-test', '~> 2.2'
   gem 'rerun', '~> 0.14'
+  gem 'simplecov', '~> 0.22', require: false
 end
