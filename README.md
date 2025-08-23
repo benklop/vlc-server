@@ -412,15 +412,15 @@ Pre-built Docker images are automatically published to GitHub Container Registry
 
 ```bash
 # Pull the latest image
-docker pull ghcr.io/benklop/vlc-proxy:latest
+docker pull ghcr.io/benklop/vlc-video-proxy:latest
 
 # Run from registry
-docker run -p 8080:8080 ghcr.io/benklop/vlc-proxy:latest
+docker run -p 8080:8080 ghcr.io/benklop/vlc-video-proxy:latest
 
 # Use in docker-compose.yml
 services:
   vlc-server:
-    image: ghcr.io/benklop/vlc-proxy:latest
+    image: ghcr.io/benklop/vlc-video-proxy:latest
     ports:
       - "8080:8080"
 ```

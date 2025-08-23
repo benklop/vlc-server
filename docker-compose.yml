@@ -1,6 +1,6 @@
 services:
   vlc-server:
-    image: ghcr.io/benklop/vlc-proxy:latest
+    image: ghcr.io/benklop/vlc-video-proxy:latest
     ports:
       - "${PORT:-8080}:${PORT:-8080}"
     # env_file is optional - create .env if you need environment variables
