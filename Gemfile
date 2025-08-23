@@ -1,6 +1,6 @@
 source 'https://rubygems.org'
 
-ruby '3.4.3'
+ruby File.read('.tool-versions').match(/ruby\s+(.+)/)[1].strip
 
 gem 'sinatra', '~> 4.1'
 gem 'rackup', '~> 2.2'

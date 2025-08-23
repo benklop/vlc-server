@@ -402,10 +402,65 @@ This application uses the standard Ruby web stack:
 - **`config/puma.development.rb`** - Development Puma settings (single worker, easier debugging)
 - **`docker/puma.rb`** - Docker-optimized settings (container-specific logging and resource limits)
 
+## CI/CD & Docker Registry
+
+This project includes GitHub Actions workflows for automated testing and Docker image publishing.
+
+### Docker Image Registry
+
+Pre-built Docker images are automatically published to GitHub Container Registry:
+
+```bash
+# Pull the latest image
+docker pull ghcr.io/benklop/vlc-proxy:latest
+
+# Run from registry
+docker run -p 8080:8080 ghcr.io/benklop/vlc-proxy:latest
+
+# Use in docker-compose.yml
+services:
+  vlc-server:
+    image: ghcr.io/benklop/vlc-proxy:latest
+    ports:
+      - "8080:8080"
+```
+
+### Available Image Tags
+
+- `latest` - Latest stable release from master branch
+- `v1.0.0` - Specific version releases (semantic versioning)
+- `master` - Latest commit from master branch
+- `pr-123` - Pull request builds (for testing)
+
+### GitHub Workflows
+
+**CI Tests** (`.github/workflows/ci.yml`):
+
+- Runs on all pushes and pull requests
+- Tests with Ruby version specified in `.tool-versions`
+- Uses mocked VLC dependencies (no actual VLC installation required)
+- Uploads coverage reports
+
+**Docker Build & Publish** (`.github/workflows/docker-build-publish.yml`):
+
+- Builds multi-architecture images (amd64, arm64)
+- Pushes to GitHub Container Registry on master branch
+- Creates version tags for releases
+- Includes security attestations and build provenance
+
+### Contributing
+
+When contributing:
+
+1. All tests must pass on the Ruby version specified in `.tool-versions`
+2. Docker builds must succeed
+3. Coverage should remain above 95%
+4. Follow existing code style and patterns
+
 ## Dependencies
 
 - VLC Media Player (cvlc command)
-- Ruby 3.2.2 (specified in .tool-versions)
+- Ruby (version specified in `.tool-versions`)
 - Bundler for dependency management
 
 ## Development

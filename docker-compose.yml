@@ -1,6 +1,6 @@
 services:
   vlc-server:
-    build: .
+    image: ghcr.io/benklop/vlc-proxy:latest
     ports:
       - "${PORT:-8080}:${PORT:-8080}"
     # env_file is optional - create .env if you need environment variables
@@ -17,10 +17,10 @@ services:
       - STREAM_SELECT_TIMEOUT=${STREAM_SELECT_TIMEOUT:-0.1}
       - VLC_GRACEFUL_TIMEOUT=${VLC_GRACEFUL_TIMEOUT:-5}
       - VLC_FORCE_TIMEOUT=${VLC_FORCE_TIMEOUT:-2}
-      
+
       # YouTube API (set via environment variables or .env file)
       - YOUTUBE_API_KEY=${YOUTUBE_API_KEY}
-      
+
       # Named playlists (set any PLAYLIST_* variables via environment or .env file)
       # Examples:
       # - PLAYLIST_FAVORITES=${PLAYLIST_FAVORITES}
