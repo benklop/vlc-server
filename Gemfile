@@ -7,6 +7,8 @@ gem 'rackup', '~> 2.2'
 gem 'puma', '~> 6.6'
 gem 'concurrent-ruby', '~> 1.3'
 gem 'rake', '~> 13.3'
+gem 'net-http', '~> 0.6'
+gem 'uri', '~> 1.0.3'
 
 group :development, :test do
   gem 'rspec', '~> 3.13'

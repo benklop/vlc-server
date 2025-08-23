@@ -17,8 +17,10 @@ RSpec.describe VLCStreamingApp do
       expect(last_response).to be_ok
       expect(last_response.content_type).to include('text/html')
       expect(last_response.body).to include('VLC Streaming Server')
-      expect(last_response.body).to include('Usage')
+      expect(last_response.body).to include('Video Streaming')
+      expect(last_response.body).to include('YouTube Playlist to M3U')
       expect(last_response.body).to include('/stream?video_url=')
+      expect(last_response.body).to include('/playlist?playlist=')
     end
   end
 

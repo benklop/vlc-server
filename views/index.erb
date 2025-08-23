@@ -6,28 +6,61 @@
     body { font-family: Arial, sans-serif; margin: 40px; }
     .code { background: #f5f5f5; padding: 10px; border-radius: 5px; font-family: monospace; }
     .example { margin: 20px 0; }
+    .endpoint { margin: 30px 0; border-top: 1px solid #ddd; padding-top: 20px; }
   </style>
 </head>
 <body>
   <h1>VLC Streaming Server</h1>
-  <p>This server accepts a video URL and streams it back to you using VLC.</p>
+  <p>This server accepts a video URL and streams it back to you using VLC, and can generate M3U playlists from YouTube playlists.</p>
 
-  <h2>Usage</h2>
-  <div class="example">
-    <strong>Endpoint:</strong> <code>GET /stream?video_url=&lt;URL&gt;</code>
-  </div>
+  <div class="endpoint">
+    <h2>Video Streaming</h2>
+    <p>Stream individual videos through VLC.</p>
+    <div class="example">
+      <strong>Endpoint:</strong> <code>GET /stream?video_url=&lt;URL&gt;</code>
+    </div>
 
-  <div class="example">
-    <strong>Example:</strong>
-    <div class="code">
-      curl "http://localhost:<%= request.port %>/stream?video_url=https://example.com/video.mp4" --output video.ts
+    <div class="example">
+      <strong>Example:</strong>
+      <div class="code">
+        curl "http://localhost:<%= request.port %>/stream?video_url=https://example.com/video.mp4" --output video.ts
+      </div>
+    </div>
+
+    <div class="example">
+      <strong>Or play directly with VLC:</strong>
+      <div class="code">
+        vlc "http://localhost:<%= request.port %>/stream?video_url=https://example.com/video.mp4"
+      </div>
     </div>
   </div>
 
-  <div class="example">
-    <strong>Or play directly with VLC:</strong>
-    <div class="code">
-      vlc "http://localhost:<%= request.port %>/stream?video_url=https://example.com/video.mp4"
+  <div class="endpoint">
+    <h2>YouTube Playlist to M3U</h2>
+    <p>Convert YouTube playlists to M3U format for streaming. Requires <code>YOUTUBE_API_KEY</code> environment variable.</p>
+    <div class="example">
+      <strong>Endpoint:</strong> <code>GET /playlist?playlist=&lt;PLAYLIST_ID_OR_URL&gt;</code>
+    </div>
+
+    <div class="example">
+      <strong>Example with Playlist ID:</strong>
+      <div class="code">
+        curl "http://localhost:<%= request.port %>/playlist?playlist=PL6NdkXsPL07Il2hEQGcLI4dg_LTg7xA2L"
+      </div>
+    </div>
+
+    <div class="example">
+      <strong>Example with YouTube URL:</strong>
+      <div class="code">
+        curl "http://localhost:<%= request.port %>/playlist?url=https://www.youtube.com/watch?v=jfKfPfyJRdk&list=PL6NdkXsPL07Il2hEQGcLI4dg_LTg7xA2L"
+      </div>
+    </div>
+
+    <div class="example">
+      <strong>Play M3U playlist with VLC:</strong>
+      <div class="code">
+        vlc "http://localhost:<%= request.port %>/playlist?playlist=PL6NdkXsPL07Il2hEQGcLI4dg_LTg7xA2L"
+      </div>
     </div>
   </div>
 
