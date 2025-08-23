@@ -21,8 +21,8 @@ RUN addgroup --g "${GID}" -S appuser && \
 # Set working directory
 WORKDIR /app
 
-# Copy Gemfile and install dependencies
-COPY Gemfile* ./
+# Copy Gemfile and .tool-versions for bundle install
+COPY Gemfile* .tool-versions ./
 RUN bundle install --without development
 
 # Copy application code
