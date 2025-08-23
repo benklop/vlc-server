@@ -1,6 +1,7 @@
 require 'net/http'
 require 'uri'
 require 'json'
+require 'unicode/scripts'
 
 class YouTubeClient
   class PlaylistError < StandardError; end
@@ -186,6 +187,154 @@ class YouTubeClient
       'description' => snippet['description'],
       'published_at' => snippet['publishedAt']
     }
+  end
+
+  # Search for live streams with advanced filtering
+  def search_live_streams(options = {})
+    # Default options
+    options = {
+      max_results: 50,
+      region_code: 'US',
+      relevance_language: 'en',
+      min_subscribers: 100000,
+      order: 'relevance'  # Options: date, rating, relevance, title, viewCount
+    }.merge(options)
+
+    all_items = []
+    next_page_token = nil
+    processed_videos = 0
+    max_total_results = options[:max_results] * 3  # Search more to account for filtering
+
+    loop do
+      # Build API request URL for live video search
+      params = {
+        'part' => 'snippet',
+        'eventType' => 'live',
+        'type' => 'video',
+        'maxResults' => '50',
+        'order' => options[:order],
+        'regionCode' => options[:region_code],
+        'relevanceLanguage' => options[:relevance_language],
+        'key' => @api_key
+      }
+
+      params['pageToken'] = next_page_token if next_page_token
+
+      data = make_youtube_api_request('search', params)
+      break if data['items'].empty?
+
+      # Get channel IDs for batch channel info request
+      channel_ids = data['items'].map { |item| item.dig('snippet', 'channelId') }.compact.uniq
+
+      # Fetch channel statistics (subscriber counts) in batch
+      channel_stats = fetch_channel_statistics(channel_ids)
+
+      # Process items from this page
+      data['items'].each do |item|
+        video_id = item.dig('id', 'videoId')
+        next unless video_id
+
+        title = item.dig('snippet', 'title')
+        channel_id = item.dig('snippet', 'channelId')
+
+        # Filter out non-English titles (allow emojis)
+        next unless english_title?(title)
+
+        # Check subscriber count requirement
+        channel_info = channel_stats[channel_id]
+        next unless channel_info
+
+        subscriber_count = channel_info['statistics']['subscriberCount'].to_i
+        next if subscriber_count < options[:min_subscribers]
+
+        # Create enhanced track item with subscriber count
+        track_item = create_track_item(video_id, title, item['snippet'])
+        track_item['channel_subscriber_count'] = subscriber_count
+        track_item['channel_id'] = channel_id
+
+        all_items << track_item
+        processed_videos += 1
+
+        # Stop if we have enough results
+        break if all_items.length >= options[:max_results]
+      end
+
+      # Check if we have enough results or should continue
+      break if all_items.length >= options[:max_results]
+      break if processed_videos >= max_total_results
+
+      # Check if there are more pages
+      next_page_token = data['nextPageToken']
+      break unless next_page_token
+    end
+
+    # Sort by subscriber count (descending)
+    all_items.sort_by { |item| -item['channel_subscriber_count'] }
+                .first(options[:max_results])
+  end
+
+  # Batch fetch channel statistics
+  def fetch_channel_statistics(channel_ids)
+    return {} if channel_ids.empty?
+
+    # YouTube API allows up to 50 IDs per request
+    channel_stats = {}
+
+    channel_ids.each_slice(50) do |batch_ids|
+      params = {
+        'part' => 'statistics',
+        'id' => batch_ids.join(','),
+        'key' => @api_key
+      }
+
+      data = make_youtube_api_request('channels', params)
+
+      data['items'].each do |channel|
+        channel_stats[channel['id']] = channel
+      end
+    end
+
+    channel_stats
+  end
+
+  # Check if title contains primarily English-compatible characters (allowing emojis)
+  def english_title?(title)
+    return false if title.nil? || title.strip.empty?
+
+    # Define scripts for analysis
+    english_scripts = ['Latin']           # Standard Latin alphabet (English, European languages)
+    neutral_scripts = ['Common', 'Inherited']  # Skip these in ratio calculation (emojis, punctuation, etc.)
+
+    # Analyze characters by Unicode script
+    total_analyzed_chars = 0
+    english_chars = 0
+
+    title.each_char do |char|
+      # Skip whitespace for analysis
+      next if char.match?(/\s/)
+
+      char_scripts = Unicode::Scripts.scripts(char)
+
+      # Skip characters that are in neutral scripts (Common/Inherited)
+      # These include emojis, punctuation, symbols, etc.
+      next if char_scripts.any? { |script| neutral_scripts.include?(script) }
+
+      # Count this character in our analysis
+      total_analyzed_chars += 1
+
+      # Check if it's an English-compatible character
+      if char_scripts.any? { |script| english_scripts.include?(script) }
+        english_chars += 1
+      end
+    end
+
+    # If no analyzable characters (only neutral scripts + whitespace), consider it valid
+    return true if total_analyzed_chars == 0
+
+    # Require at least 85% of analyzable characters to be Latin script
+    # This focuses the analysis on actual language content, ignoring decorative elements
+    english_ratio = english_chars.to_f / total_analyzed_chars
+    english_ratio >= 0.85
   end
 
   private

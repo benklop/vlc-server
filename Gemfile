@@ -9,6 +9,8 @@ gem 'concurrent-ruby', '~> 1.3'
 gem 'rake', '~> 13.3'
 gem 'net-http', '~> 0.6'
 gem 'uri', '~> 1.0.3'
+gem 'unicode', '~> 0.4'
+gem 'unicode-scripts', '~> 1.9'
 
 group :development, :test do
   gem 'rspec', '~> 3.13'
