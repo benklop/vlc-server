@@ -112,6 +112,9 @@ ALLOWED_HOSTS="localhost,127.0.0.1,myserver.com" rake server:dev
 
 # Docker with custom configuration
 HTTP_PORT=3000 ALLOWED_HOSTS="localhost,127.0.0.1,docker.local" rake docker:up
+
+# Test custom port with Docker
+docker run --rm -p 9000:9000 -e HTTP_PORT=9000 vlc-streaming-server
 ```
 
 ## API Endpoints

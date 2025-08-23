@@ -1,5 +1,4 @@
 # Puma configuration optimized for Docker containers
-port ENV.fetch('HTTP_PORT', ENV.fetch('PORT', 8080)).to_i
 environment ENV.fetch('RACK_ENV', 'production')
 
 # Workers based on CPU cores (Docker containers typically have limited cores)

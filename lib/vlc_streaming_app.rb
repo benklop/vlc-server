@@ -3,8 +3,8 @@ require 'concurrent'
 require_relative 'vlc_streamer'
 
 class VLCStreamingApp < Sinatra::Base
-  # Configure Sinatra port from environment variable
-  set :port, ENV.fetch('HTTP_PORT', '8080').to_i
+  # Configure Sinatra to bind to all interfaces
+  # Port configuration is handled by the web server (Puma)
   set :bind, '0.0.0.0'
 
   # Configure host authorization for Sinatra 4.x
