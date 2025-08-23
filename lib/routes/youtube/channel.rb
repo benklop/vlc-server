@@ -1,4 +1,5 @@
 require_relative '../../playlist_generator'
+require_relative '../../youtube_client'
 
 module Routes
   module Youtube
@@ -13,10 +14,11 @@ module Routes
           end
 
           begin
-            generator = PlaylistGenerator.new
+            youtube_client = YouTubeClient.new
+            playlist_generator = PlaylistGenerator.new
 
             # Extract channel ID from parameter
-            channel_id = generator.extract_channel_id(channel_param)
+            channel_id = youtube_client.extract_channel_id(channel_param)
 
             if channel_id.nil?
               halt 400, "Invalid channel ID, username, or URL format."
@@ -28,47 +30,55 @@ module Routes
             # Maximum number of results (default: 50, max: 200)
             if params['max_results']
               max_results = params['max_results'].to_i
-              options[:max_results] = [[max_results, 1].max, 200].min
+              options['max_results'] = [[max_results, 1].max, 200].min
             end
 
             # Ordering (date, relevance, title, viewCount, rating)
             if params['order'] && %w[date relevance title viewCount rating].include?(params['order'])
-              options[:order] = params['order']
+              options['order'] = params['order']
             end
 
             # Live streams only
             if params['live_only'] == 'true' || params['live'] == 'true'
-              options[:live_only] = true
+              options['live_only'] = true
             end
 
             # Content type filter
             if params['type'] && %w[video channel playlist].include?(params['type'])
-              options[:type] = params['type']
+              options['type'] = params['type']
+            end
+
+            # Fetch tracks from YouTube
+            tracks = youtube_client.fetch_channel_tracks(channel_id, options)
+
+            if tracks.empty?
+              halt 404, "No accessible videos found in channel."
             end
 
             # Generate M3U for channel
             base_url = "#{request.scheme}://#{request.host_with_port}"
-            m3u_content = generator.generate_m3u_for_channel(channel_id, base_url, options)
+            playlist_generator = PlaylistGenerator.new
+            m3u_content = playlist_generator.generate_m3u(tracks, base_url)
 
             # Set headers for m3u download only after successful generation
             content_type 'audio/x-mpegurl'
 
             # Generate filename based on parameters
             filename_parts = [channel_param.gsub(/[^a-zA-Z0-9_-]/, '_')]
-            filename_parts << 'live' if options[:live_only]
-            filename_parts << options[:order] if options[:order] && options[:order] != 'date'
-            filename_parts << "#{options[:max_results]}videos" if options[:max_results] && options[:max_results] != 50
+            filename_parts << 'live' if options['live_only']
+            filename_parts << options['order'] if options['order'] && options['order'] != 'date'
+            filename_parts << "#{options['max_results']}videos" if options['max_results'] && options['max_results'] != 50
 
             attachment "#{filename_parts.join('_')}.m3u"
 
             # Return the M3U content
             m3u_content
 
-          rescue PlaylistGenerator::ConfigurationError => e
+          rescue YouTubeClient::ConfigurationError => e
             halt 500, e.message
-          rescue PlaylistGenerator::PlaylistError => e
+          rescue YouTubeClient::PlaylistError => e
             halt 404, e.message
-          rescue PlaylistGenerator::APIError => e
+          rescue YouTubeClient::APIError => e
             halt 500, e.message
           rescue StandardError => e
             halt 500, "Error generating channel playlist: #{e.message}"

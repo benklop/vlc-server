@@ -178,9 +178,19 @@ RSpec.describe 'YouTube Playlist Routes' do
         allow(ENV).to receive(:[]).with('PLAYLIST_FAVORITES').and_return(playlist_id)
         allow(ENV).to receive(:[]).with('YOUTUBE_API_KEY').and_return('fake_api_key')
 
-        # Mock the PlaylistGenerator
-        allow(PlaylistGenerator).to receive(:new).and_return(mock_generator)
-        allow(mock_generator).to receive(:generate_m3u_for_playlist).and_return(
+        # Mock the classes
+        mock_youtube_client = instance_double(YouTubeClient)
+        mock_playlist_generator = instance_double(PlaylistGenerator)
+        allow(YouTubeClient).to receive(:new).and_return(mock_youtube_client)
+        allow(PlaylistGenerator).to receive(:new).and_return(mock_playlist_generator)
+        allow(mock_youtube_client).to receive(:extract_playlist_id).and_return(playlist_id)
+        allow(mock_youtube_client).to receive(:fetch_playlist_tracks).and_return([
+          {
+            'title' => 'Test Song 1',
+            'url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+          }
+        ])
+        allow(mock_playlist_generator).to receive(:generate_m3u).and_return(
           "#EXTM3U\n#EXTINF:-1,Test Song 1\nhttp://localhost:8080/stream?video_url=https%3A//www.youtube.com/watch%3Fv%3DdQw4w9WgXcQ\n"
         )
       end
@@ -217,9 +227,19 @@ RSpec.describe 'YouTube Playlist Routes' do
         allow(ENV).to receive(:[]).and_call_original
         allow(ENV).to receive(:[]).with('YOUTUBE_API_KEY').and_return('fake_api_key')
 
-        # Mock the PlaylistGenerator
-        allow(PlaylistGenerator).to receive(:new).and_return(mock_generator)
-        allow(mock_generator).to receive(:generate_m3u_for_playlist).and_return(
+        # Mock the classes
+        mock_youtube_client = instance_double(YouTubeClient)
+        mock_playlist_generator = instance_double(PlaylistGenerator)
+        allow(YouTubeClient).to receive(:new).and_return(mock_youtube_client)
+        allow(PlaylistGenerator).to receive(:new).and_return(mock_playlist_generator)
+        allow(mock_youtube_client).to receive(:extract_playlist_id).and_return(playlist_id)
+        allow(mock_youtube_client).to receive(:fetch_playlist_tracks).and_return([
+          {
+            'title' => 'Test Song',
+            'url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+          }
+        ])
+        allow(mock_playlist_generator).to receive(:generate_m3u).and_return(
           "#EXTM3U\n#EXTINF:-1,Test Song\nhttp://localhost:8080/stream?video_url=https%3A//www.youtube.com/watch%3Fv%3DdQw4w9WgXcQ\n"
         )
       end

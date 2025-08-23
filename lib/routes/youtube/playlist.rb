@@ -1,5 +1,6 @@
 require 'uri'
 require_relative '../../playlist_generator'
+require_relative '../../youtube_client'
 
 module Routes
   module Youtube
@@ -7,36 +8,27 @@ module Routes
       def self.registered(app)
         # Helper methods
         app.helpers do
-          # Extract playlist ID from either a playlist ID or YouTube URL
-          def extract_playlist_id(param)
-            # If it's already a playlist ID (starts with PL and alphanumeric)
-            if param.match?(/^PL[a-zA-Z0-9_-]+$/)
-              return param
-            end
-
-            # If it's a YouTube URL, extract the list parameter
-            uri = URI.parse(param)
-            if uri.query
-              query_params = URI.decode_www_form(uri.query).to_h
-              return query_params['list']
-            end
-
-            nil
-          rescue URI::InvalidURIError
-            nil
-          end
-
           # Main method to generate M3U for a playlist
           def generate_m3u_for_playlist(playlist_id)
             begin
-              generator = PlaylistGenerator.new
+              youtube_client = YouTubeClient.new
+              playlist_generator = PlaylistGenerator.new
               base_url = "#{request.scheme}://#{request.host_with_port}"
-              generator.generate_m3u_for_playlist(playlist_id, base_url)
-            rescue PlaylistGenerator::ConfigurationError => e
+
+              # Fetch tracks from YouTube
+              tracks = youtube_client.fetch_playlist_tracks(playlist_id)
+
+              if tracks.empty?
+                halt 404, "No accessible videos found in playlist. Playlist may be empty, private, or contain only private/deleted videos."
+              end
+
+              # Generate M3U playlist
+              playlist_generator.generate_m3u(tracks, base_url)
+            rescue YouTubeClient::ConfigurationError => e
               halt 500, e.message
-            rescue PlaylistGenerator::PlaylistError => e
+            rescue YouTubeClient::PlaylistError => e
               halt 404, e.message
-            rescue PlaylistGenerator::APIError => e
+            rescue YouTubeClient::APIError => e
               halt 500, e.message
             rescue StandardError => e
               halt 500, "Error generating playlist: #{e.message}"
@@ -86,7 +78,8 @@ module Routes
           end
 
           # Extract playlist ID from parameter
-          playlist_id = extract_playlist_id(playlist_param)
+          youtube_client = YouTubeClient.new
+          playlist_id = youtube_client.extract_playlist_id(playlist_param)
 
           if playlist_id.nil?
             halt 400, "Invalid playlist ID or URL format. Must be a YouTube playlist ID (starting with 'PL') or a valid YouTube playlist URL."
@@ -117,7 +110,8 @@ module Routes
           end
 
           # Extract the actual playlist ID from the parameter
-          playlist_id = extract_playlist_id(playlist_param)
+          youtube_client = YouTubeClient.new
+          playlist_id = youtube_client.extract_playlist_id(playlist_param)
 
           if playlist_id.nil?
             halt 400, "Invalid playlist format for #{env_var}: #{playlist_param}. Must be a YouTube playlist ID (starting with 'PL') or a valid YouTube playlist URL."
