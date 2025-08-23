@@ -1,20 +1,39 @@
-version: '3.8'
 services:
-  vlc:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: vlc
+  vlc-server:
+    image: ghcr.io/benklop/vlc-video-proxy:latest
     ports:
-      - "8554:8554"
+      - "${PORT:-8080}:${PORT:-8080}"
+    # env_file is optional - create .env if you need environment variables
+    # env_file:
+    #   - .env
     environment:
-      - SOURCE_URL=http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4
-    command:
-      - "${SOURCE_URL}"
-      - "--no-audio"
-      - "--no-video"
-      - "--sout"
-      - "#standard{access=http,mux=ts,dst=:8554}"
-      - "--no-sout-all"
-      - "--sout-keep"
+      # Default configuration - override with .env file or docker-compose.override.yml
+      - RACK_ENV=${RACK_ENV:-production}
+      - PORT=${PORT:-8080}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1,0.0.0.0}
+      - PUMA_THREADS=${PUMA_THREADS:-10}
+      - WEB_CONCURRENCY=${WEB_CONCURRENCY:-0}
+      - STREAM_CHUNK_SIZE=${STREAM_CHUNK_SIZE:-8192}
+      - STREAM_SELECT_TIMEOUT=${STREAM_SELECT_TIMEOUT:-0.1}
+      - VLC_GRACEFUL_TIMEOUT=${VLC_GRACEFUL_TIMEOUT:-5}
+      - VLC_FORCE_TIMEOUT=${VLC_FORCE_TIMEOUT:-2}
+
+      # YouTube API (set via environment variables or .env file)
+      - YOUTUBE_API_KEY=${YOUTUBE_API_KEY}
+
+      # Named playlists (set any PLAYLIST_* variables via environment or .env file)
+      # Examples:
+      # - PLAYLIST_FAVORITES=${PLAYLIST_FAVORITES}
+      # - PLAYLIST_ROCK=${PLAYLIST_ROCK}
+    networks:
+      - vlc-server
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  vlc-server:
+    driver: bridge
