@@ -1,7 +1,7 @@
 # SimpleCov configuration
 SimpleCov.configure do
   # Minimum coverage thresholds
-  minimum_coverage line: 85
+  minimum_coverage line: 90
 
   # Output formatters
   if ENV['CI']

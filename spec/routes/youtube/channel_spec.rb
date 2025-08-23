@@ -153,4 +153,125 @@ RSpec.describe 'YouTube Channel Routes' do
       end
     end
   end
+
+  describe 'GET /youtube/channel/:channel/info' do
+    it 'returns channel info and available filters as JSON' do
+      get_with_host '/youtube/channel/test_channel/info'
+
+      expect(last_response).to be_ok
+      expect(last_response.content_type).to include('application/json')
+
+      json_response = JSON.parse(last_response.body)
+      expect(json_response).to have_key('channel')
+      expect(json_response).to have_key('available_filters')
+      expect(json_response).to have_key('examples')
+      expect(json_response['channel']).to eq('test_channel')
+      expect(json_response['available_filters']).to have_key('max_results')
+      expect(json_response['available_filters']).to have_key('order')
+      expect(json_response['available_filters']).to have_key('live_only')
+      expect(json_response['available_filters']).to have_key('type')
+    end
+  end
+
+  describe 'GET /youtube/channels' do
+    context 'with no configured channels' do
+      before do
+        allow(ENV).to receive(:select).and_return({})
+      end
+
+      it 'returns empty channel list' do
+        get_with_host '/youtube/channels'
+
+        expect(last_response).to be_ok
+        expect(last_response.content_type).to include('application/json')
+
+        json_response = JSON.parse(last_response.body)
+        expect(json_response['available_channels']).to be_empty
+        expect(json_response['count']).to eq(0)
+        expect(json_response['examples']).to be_an(Array)
+        expect(json_response['note']).to include('environment variables')
+      end
+    end
+
+    context 'with configured channels' do
+      before do
+        allow(ENV).to receive(:select).and_return({
+          'CHANNEL_NEWS' => 'UC123news',
+          'CHANNEL_MUSIC' => 'UC456music'
+        })
+      end
+
+      it 'returns JSON list of available named channels' do
+        get_with_host '/youtube/channels'
+
+        expect(last_response).to be_ok
+        expect(last_response.content_type).to include('application/json')
+
+        json_response = JSON.parse(last_response.body)
+        expect(json_response['available_channels'].length).to eq(2)
+        expect(json_response['count']).to eq(2)
+
+        news_channel = json_response['available_channels'].find { |ch| ch['name'] == 'news' }
+        expect(news_channel).to include(
+          'name' => 'news',
+          'endpoint' => '/youtube/channel/news',
+          'info_endpoint' => '/youtube/channel/news/info',
+          'env_var' => 'CHANNEL_NEWS',
+          'configured' => true
+        )
+      end
+    end
+  end
+
+  describe 'GET /youtube/channel/named/:name' do
+    context 'with configured named channel' do
+      before do
+        allow(ENV).to receive(:[]).and_call_original
+        allow(ENV).to receive(:[]).with('CHANNEL_NEWS').and_return('UC123news')
+      end
+
+      it 'redirects to the configured channel route' do
+        get_with_host '/youtube/channel/named/news'
+
+        expect(last_response.status).to eq(302)
+        expect(last_response.headers['Location']).to include('/youtube/channel/UC123news')
+      end
+
+      it 'preserves query parameters in redirect' do
+        get_with_host '/youtube/channel/named/news?max_results=25&order=viewCount'
+
+        expect(last_response.status).to eq(302)
+        expect(last_response.headers['Location']).to include('max_results=25&order=viewCount')
+      end
+    end
+
+    context 'with unconfigured named channel' do
+      before do
+        allow(ENV).to receive(:[]).and_call_original
+        allow(ENV).to receive(:[]).with('CHANNEL_UNKNOWN').and_return(nil)
+      end
+
+      it 'returns 404 for unconfigured channel' do
+        get_with_host '/youtube/channel/named/unknown'
+
+        expect(last_response.status).to eq(404)
+        expect(last_response.body).to include('Named channel \'unknown\' not configured')
+        expect(last_response.body).to include('Set CHANNEL_UNKNOWN environment variable')
+      end
+    end
+
+    context 'with empty channel configuration' do
+      before do
+        allow(ENV).to receive(:[]).and_call_original
+        allow(ENV).to receive(:[]).with('CHANNEL_EMPTY').and_return('   ')
+      end
+
+      it 'returns 404 for empty channel configuration' do
+        get_with_host '/youtube/channel/named/empty'
+
+        expect(last_response.status).to eq(404)
+        expect(last_response.body).to include('Named channel \'empty\' not configured')
+      end
+    end
+  end
 end
