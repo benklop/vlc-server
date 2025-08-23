@@ -220,7 +220,7 @@ namespace :info do
       last_run = JSON.parse(File.read('coverage/.last_run.json'))
       line_coverage = last_run.dig('result', 'line')
       branch_coverage = last_run.dig('result', 'branch')
-      
+
       puts "Test Coverage Summary"
       puts "===================="
       puts "Line Coverage:   #{line_coverage}%" if line_coverage
