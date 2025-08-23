@@ -1,15 +1,41 @@
-FROM ruby:3.4.3-alpine
+# Build stage
+FROM ruby:3.4.3-alpine AS builder
 
 ARG UID="1000"
 ARG GID="1000"
 
-# Install system dependencies
+# Install build dependencies
 RUN apk update && \
     apk add --no-cache \
     build-base \
-    vlc \
     vlc-dev \
     wget \
+    && rm -rf /var/cache/apk/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy Gemfile and .tool-versions for bundle install
+COPY Gemfile* .tool-versions ./
+
+# Install gems
+RUN bundle config set --local deployment 'true' && \
+    bundle config set --local without 'development test' && \
+    bundle install
+
+# Copy application code
+COPY . .
+
+# Production stage
+FROM ruby:3.4.3-alpine AS production
+
+ARG UID="1000"
+ARG GID="1000"
+
+# Install only runtime dependencies
+RUN apk update && \
+    apk add --no-cache \
+    vlc \
     && rm -rf /var/cache/apk/*
 
 # Create user and app directory
@@ -21,19 +47,15 @@ RUN addgroup --g "${GID}" -S appuser && \
 # Set working directory
 WORKDIR /app
 
-# Copy Gemfile and .tool-versions for bundle install
-COPY Gemfile* .tool-versions ./
-RUN bundle install --without development
+# Copy the installed gems from builder stage
+COPY --from=builder /usr/local/bundle /usr/local/bundle
 
-# Copy application code
-COPY . .
+# Copy application code from builder stage
+COPY --from=builder --chown=appuser:appuser /app /app
 
 # Copy and setup healthcheck script
-COPY docker/healthcheck.sh /usr/local/bin/healthcheck
+COPY --chown=appuser:appuser docker/healthcheck.sh /usr/local/bin/healthcheck
 RUN chmod +x /usr/local/bin/healthcheck
-
-# Ensure proper ownership
-RUN chown -R appuser:appuser /app
 
 # Switch to non-root user
 USER appuser
