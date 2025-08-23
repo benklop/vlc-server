@@ -89,8 +89,17 @@ The server can be configured using environment variables or a `.env` file for Do
 
 ### Environment Variables
 
-- `HTTP_PORT` - Port to bind the server to (default: `8080`)
+#### Application Configuration
+- `PORT` - Port to bind the server to (default: `8080`)
 - `ALLOWED_HOSTS` - Comma-separated list of allowed hosts for host authorization (default: `localhost,127.0.0.1,0.0.0.0,example.org`)
+- `RACK_ENV` - Application environment: `development`, `production`, or `test` (default: `production` in Docker)
+
+#### Performance Tuning
+- `PUMA_THREADS` - Number of threads per Puma process for concurrent requests (default: `2` dev, `5` prod, `10` Docker)
+- `WEB_CONCURRENCY` - Number of Puma worker processes (default: `2` prod, `0` Docker for single-mode)
+
+#### Legacy/Platform Variables
+- `PORT` - Alternative port variable (Heroku compatibility, fallback for `PORT`)
 
 ### Environment File
 
@@ -105,16 +114,26 @@ cp .env.example .env
 
 ```bash
 # Run on port 3000
-HTTP_PORT=3000 rake server:dev
+PORT=3000 rake server:dev
 
 # Allow additional hosts
 ALLOWED_HOSTS="localhost,127.0.0.1,myserver.com" rake server:dev
 
+# Increase concurrent connections for high load
+PUMA_THREADS=20 rake server:puma
+
 # Docker with custom configuration
-HTTP_PORT=3000 ALLOWED_HOSTS="localhost,127.0.0.1,docker.local" rake docker:up
+PORT=3000 ALLOWED_HOSTS="localhost,127.0.0.1,docker.local" rake docker:up
+
+# High-performance Docker deployment
+docker run -p 8080:8080 \
+  -e PORT=8080 \
+  -e PUMA_THREADS=15 \
+  -e ALLOWED_HOSTS="myserver.com,www.myserver.com" \
+  vlc-streaming-server
 
 # Test custom port with Docker
-docker run --rm -p 9000:9000 -e HTTP_PORT=9000 vlc-streaming-server
+docker run --rm -p 9000:9000 -e PORT=9000 vlc-streaming-server
 ```
 
 ## API Endpoints

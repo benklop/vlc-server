@@ -9,19 +9,19 @@ RSpec.describe 'VLCStreamingApp Configuration' do
   end
 
   describe 'Environment Variable Configuration' do
-    context 'when port is configured via HTTP_PORT' do
+    context 'when port is configured via PORT' do
       it 'uses the configured port from environment' do
         # Set environment variable and create a new app instance
-        stub_const("ENV", ENV.to_hash.merge('HTTP_PORT' => '9090'))
-        expect(ENV.fetch('HTTP_PORT', '8080').to_i).to eq(9090)
+        stub_const("ENV", ENV.to_hash.merge('PORT' => '9090'))
+        expect(ENV.fetch('PORT', '8080').to_i).to eq(9090)
       end
     end
 
     context 'when environment variables are not set' do
       it 'uses default port 8080' do
         # Remove environment variable and check default
-        stub_const("ENV", ENV.to_hash.tap { |h| h.delete('HTTP_PORT') })
-        expect(ENV.fetch('HTTP_PORT', '8080').to_i).to eq(8080)
+        stub_const("ENV", ENV.to_hash.tap { |h| h.delete('PORT') })
+        expect(ENV.fetch('PORT', '8080').to_i).to eq(8080)
       end
     end
   end
@@ -58,7 +58,7 @@ RSpec.describe 'VLCStreamingApp Configuration' do
     it 'has correct default port configuration (handled by web server)' do
       # Port configuration is now handled by Puma, not Sinatra
       # Test that the environment variable logic works correctly
-      expect(ENV.fetch('HTTP_PORT', '8080').to_i).to eq(8080)
+      expect(ENV.fetch('PORT', '8080').to_i).to eq(8080)
     end
 
     it 'accepts requests from default allowed hosts' do

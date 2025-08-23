@@ -1,7 +1,7 @@
 #!/usr/bin/env puma
 
 # Puma configuration for production
-port ENV.fetch('HTTP_PORT', ENV.fetch('PORT', 8080)).to_i
+port ENV.fetch('PORT', ENV.fetch('PORT', 8080)).to_i
 environment ENV.fetch('RACK_ENV', 'production')
 
 # Worker processes
