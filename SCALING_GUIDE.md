@@ -31,7 +31,7 @@ services:
       replicas: 3  # Run 3 containers
     environment:
       - PUMA_THREADS=10
-      
+
   nginx:
     image: nginx
     ports:

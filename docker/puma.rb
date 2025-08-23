@@ -18,17 +18,3 @@ bind "tcp://0.0.0.0:#{ENV.fetch('PORT', 8080)}"
 
 # Container-specific logging (Docker captures stdout/stderr)
 stdout_redirect '/dev/stdout', '/dev/stderr', true
-
-# Graceful shutdown handling for containers
-on_worker_shutdown do
-  puts 'Worker shutting down gracefully...'
-end
-
-on_restart do
-  puts 'Puma restarting in container...'
-end
-
-# Worker boot for container-specific setup
-on_worker_boot do
-  # Any container-specific initialization here
-end
