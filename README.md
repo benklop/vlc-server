@@ -25,19 +25,21 @@ A Ruby-based web server that accepts video URLs and streams them back to clients
 ```text
 vlc-server/
 ├── bin/
-│   └── vlc-streaming-server # Executable application entry point
+│   └── vlc-streaming-server    # Executable application entry point
 ├── config/
-│   ├── puma.rb              # Production Puma configuration
-│   └── puma.development.rb  # Development Puma configuration
+│   └── puma.rb                 # Unified Puma configuration
 ├── docker/
-│   └── puma.rb              # Docker-optimized Puma configuration
+│   └── healthcheck.sh          # Health check script for Docker
 ├── lib/
-│   ├── vlc_streamer.rb      # VLC process management
-│   └── vlc_streaming_app.rb # Sinatra application
-├── spec/                    # RSpec tests
-├── config.ru                # Rack configuration
-├── Rakefile                 # Task definitions
-├── Dockerfile               # Container build
+│   ├── vlc_streamer.rb         # VLC process management
+│   ├── vlc_streaming_app.rb    # Sinatra application
+│   └── vlc_process_manager.rb  # Process tracking and cleanup
+├── views/
+│   └── index.erb               # Homepage template
+├── spec/                       # RSpec tests
+├── config.ru                   # Rack configuration
+├── Rakefile                    # Task definitions
+├── Dockerfile                  # Container build
 ├── docker-compose.yml       # Docker Compose setup
 └── .tool-versions           # Ruby version specification
 ```
@@ -95,11 +97,19 @@ The server can be configured using environment variables or a `.env` file for Do
 - `RACK_ENV` - Application environment: `development`, `production`, or `test` (default: `production` in Docker)
 
 #### Performance Tuning
+
 - `PUMA_THREADS` - Number of threads per Puma process for concurrent requests (default: `2` dev, `5` prod, `10` Docker)
 - `WEB_CONCURRENCY` - Number of Puma worker processes (default: `2` prod, `0` Docker for single-mode)
 
-#### Legacy/Platform Variables
-- `PORT` - Alternative port variable (Heroku compatibility, fallback for `PORT`)
+#### Streaming Configuration
+
+- `STREAM_CHUNK_SIZE` - Chunk size for reading data from VLC in bytes (default: `8192`)
+- `STREAM_SELECT_TIMEOUT` - Timeout for I/O select operations in seconds (default: `0.1`)
+
+#### VLC Process Management
+
+- `VLC_GRACEFUL_TIMEOUT` - Timeout for graceful VLC shutdown in seconds (default: `5`)
+- `VLC_FORCE_TIMEOUT` - Timeout for forced VLC shutdown in seconds (default: `2`)
 
 ### Environment File
 
@@ -252,3 +262,23 @@ rake spec
 bundle install
 ruby bin/vlc-streaming-server
 ```
+
+## Performance & Scaling
+
+This server is designed for home/small office use. For increased capacity:
+
+**Increase concurrent connections:**
+
+```bash
+# Handle more clients (recommended for most use cases)
+PUMA_THREADS=20 docker run -p 8080:8080 vlc-streaming-server
+```
+
+**Multiple containers:**
+
+```bash
+# Scale horizontally with load balancer
+docker-compose up --scale vlc-server=3
+```
+
+**Resource limits:** Each VLC stream uses ~50-100MB RAM and moderate CPU. Monitor with `/health` endpoint.

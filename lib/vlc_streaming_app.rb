@@ -1,19 +1,21 @@
 require 'sinatra'
 require 'concurrent'
 require_relative 'vlc_streamer'
+require_relative 'vlc_process_manager'
 
 class VLCStreamingApp < Sinatra::Base
   # Configure Sinatra to bind to all interfaces
   # Port configuration is handled by the web server (Puma)
   set :bind, '0.0.0.0'
+  set :views, File.join(File.dirname(__FILE__), '..', 'views')
 
   # Configure host authorization for Sinatra 4.x
   # Allow requests from hosts specified in environment variable
   allowed_hosts = ENV.fetch('ALLOWED_HOSTS', 'localhost,127.0.0.1,0.0.0.0,example.org').split(',').map(&:strip)
   set :protection, :allowed_hosts => allowed_hosts
 
-  # Global hash to track VLC processes for each client
-  VLC_PROCESSES = Concurrent::Hash.new
+  # Process manager to track VLC processes for each client
+  @@process_manager = VLCProcessManager.new
 
   # Route to handle video streaming
   get '/stream' do
@@ -37,8 +39,8 @@ class VLCStreamingApp < Sinatra::Base
       vlc_stdout = vlc_data[:stdout]
       vlc_process = vlc_data[:process]
 
-      # Store the streamer for cleanup
-      VLC_PROCESSES[client_id] = streamer
+      # Store the streamer for cleanup later
+      @@process_manager.add_process(client_id, streamer)
 
       # Set response headers for streaming
       response.headers['Content-Type'] = 'video/mp2t'
@@ -49,12 +51,15 @@ class VLCStreamingApp < Sinatra::Base
       stream do |out|
         begin
           # Read from VLC stdout and write to response
+          chunk_size = ENV.fetch('STREAM_CHUNK_SIZE', '8192').to_i
+          select_timeout = ENV.fetch('STREAM_SELECT_TIMEOUT', '0.1').to_f
+          
           while !vlc_stdout.eof? && vlc_process.alive?
             begin
-              chunk = vlc_stdout.read_nonblock(8192)
+              chunk = vlc_stdout.read_nonblock(chunk_size)
               out << chunk
             rescue IO::WaitReadable
-              IO.select([vlc_stdout], nil, nil, 0.1)
+              IO.select([vlc_stdout], nil, nil, select_timeout)
               retry
             rescue EOFError
               break
@@ -65,15 +70,13 @@ class VLCStreamingApp < Sinatra::Base
         ensure
           puts "Client disconnected, cleaning up VLC process"
           # Clean up when client disconnects
-          VLC_PROCESSES.delete(client_id)
-          streamer.stop
+          cleanup_vlc_process(client_id, streamer)
         end
       end
 
     rescue => e
       puts "Error starting VLC: #{e.message}"
-      VLC_PROCESSES.delete(client_id)
-      streamer&.stop
+      cleanup_vlc_process(client_id, streamer)
       halt 500, "Failed to start video stream: #{e.message}"
     end
   end
@@ -83,73 +86,47 @@ class VLCStreamingApp < Sinatra::Base
     content_type :json
     {
       status: 'ok',
-      active_streams: VLC_PROCESSES.size,
+      active_streams: @@process_manager.active_count,
       timestamp: Time.now.iso8601
     }.to_json
   end
 
   # Root endpoint with usage instructions
   get '/' do
-    content_type :html
-    <<~HTML
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>VLC Streaming Server</title>
-        <style>
-          body { font-family: Arial, sans-serif; margin: 40px; }
-          .code { background: #f5f5f5; padding: 10px; border-radius: 5px; font-family: monospace; }
-          .example { margin: 20px 0; }
-        </style>
-      </head>
-      <body>
-        <h1>VLC Streaming Server</h1>
-        <p>This server accepts a video URL and streams it back to you using VLC.</p>
+    @active_streams = @@process_manager.active_count
+    erb :index
+  end
 
-        <h2>Usage</h2>
-        <div class="example">
-          <strong>Endpoint:</strong> <code>GET /stream?video_url=&lt;URL&gt;</code>
-        </div>
+  private
 
-        <div class="example">
-          <strong>Example:</strong>
-          <div class="code">
-            curl "http://localhost:8080/stream?video_url=https://example.com/video.mp4" --output video.ts
-          </div>
-        </div>
+  # Clean up a specific VLC process
+  def cleanup_vlc_process(client_id, streamer)
+    # Try to remove from process manager first
+    removed = @@process_manager.remove_process(client_id)
+    
+    # If not in process manager (e.g., failed to start), stop manually
+    streamer&.stop unless removed
+  end
 
-        <div class="example">
-          <strong>Or play directly with VLC:</strong>
-          <div class="code">
-            vlc "http://localhost:8080/stream?video_url=https://example.com/video.mp4"
-          </div>
-        </div>
-
-        <h2>Health Check</h2>
-        <p><a href="/health">Check server status</a></p>
-
-        <p><small>Active streams: #{VLC_PROCESSES.size}</small></p>
-      </body>
-      </html>
-    HTML
+  # Class methods for cleanup (accessible from class-level blocks)
+  class << self
+    def cleanup_all_vlc_processes
+      @@process_manager.stop_all
+    end
   end
 
   # Cleanup on exit
   at_exit do
     puts "Server shutting down, cleaning up VLC processes..."
-    VLC_PROCESSES.each_value(&:stop)
+    VLCStreamingApp.cleanup_all_vlc_processes
   end
 
   # Signal handlers for graceful shutdown
-  trap('INT') do
-    puts "\nReceived SIGINT, shutting down gracefully..."
-    VLC_PROCESSES.each_value(&:stop)
-    exit
-  end
-
-  trap('TERM') do
-    puts "\nReceived SIGTERM, shutting down gracefully..."
-    VLC_PROCESSES.each_value(&:stop)
-    exit
+  %w[INT TERM].each do |signal|
+    trap(signal) do
+      puts "\nReceived SIG#{signal}, shutting down gracefully..."
+      VLCStreamingApp.cleanup_all_vlc_processes
+      exit
+    end
   end
 end

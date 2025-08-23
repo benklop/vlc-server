@@ -14,7 +14,6 @@ RSpec.describe VLCStreamer do
       expect(streamer.stdin).to be_nil
       expect(streamer.stdout).to be_nil
       expect(streamer.stderr).to be_nil
-      expect(streamer.thread).to be_nil
     end
   end
 
@@ -56,7 +55,6 @@ RSpec.describe VLCStreamer do
       expect(streamer.stdin).not_to be_nil
       expect(streamer.stdout).not_to be_nil
       expect(streamer.stderr).not_to be_nil
-      expect(streamer.thread).not_to be_nil
     end
   end
 
@@ -77,32 +75,32 @@ RSpec.describe VLCStreamer do
       let(:mock_stdin) { double('stdin') }
       let(:mock_stdout) { double('stdout') }
       let(:mock_stderr) { double('stderr') }
-      let(:mock_thread) { double('thread', join: true, alive?: false, pid: 12345) }
-      let(:mock_process) { double('process', alive?: true, pid: 12345) }
+      let(:mock_process) { double('process', alive?: true, pid: 12345, join: true) }
 
       before do
         streamer.instance_variable_set(:@stdin, mock_stdin)
         streamer.instance_variable_set(:@stdout, mock_stdout)
         streamer.instance_variable_set(:@stderr, mock_stderr)
-        streamer.instance_variable_set(:@thread, mock_thread)
         streamer.instance_variable_set(:@process, mock_process)
 
         allow(mock_stdin).to receive(:close)
         allow(mock_stdout).to receive(:close)
         allow(mock_stderr).to receive(:close)
+        allow(ENV).to receive(:fetch).with('VLC_GRACEFUL_TIMEOUT', '5').and_return('5')
+        allow(ENV).to receive(:fetch).with('VLC_FORCE_TIMEOUT', '2').and_return('2')
       end
 
       it 'closes stdin and waits for graceful shutdown' do
         expect(mock_stdin).to receive(:close)
-        expect(mock_thread).to receive(:join).with(5).and_return(true)
+        expect(mock_process).to receive(:join).with(5).and_return(true)
 
         streamer.stop
       end
 
       it 'force kills if graceful shutdown fails' do
-        allow(mock_thread).to receive(:join).with(5).and_return(false)
-        allow(mock_thread).to receive(:join).with(2)
-        allow(mock_thread).to receive(:alive?).and_return(true)
+        allow(mock_process).to receive(:join).with(5).and_return(false)
+        allow(mock_process).to receive(:join).with(2)
+        allow(mock_process).to receive(:alive?).and_return(true)
 
         expect(Process).to receive(:kill).with('TERM', 12345)
         expect(Process).to receive(:kill).with('KILL', 12345)
@@ -117,7 +115,6 @@ RSpec.describe VLCStreamer do
         expect(streamer.stdin).to be_nil
         expect(streamer.stdout).to be_nil
         expect(streamer.stderr).to be_nil
-        expect(streamer.thread).to be_nil
       end
     end
   end

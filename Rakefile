@@ -64,7 +64,7 @@ namespace :server do
     puts "Press Ctrl+C to stop the server"
     puts ""
 
-    exec 'bundle exec puma -C config/puma.development.rb config.ru'
+    exec 'bundle exec puma -C config/puma.rb config.ru'
   end
 end
 

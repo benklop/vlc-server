@@ -38,8 +38,11 @@ RUN chown -R appuser:appuser /app
 # Switch to non-root user
 USER appuser
 
+# Set container environment variable
+ENV CONTAINER=docker
+
 # Expose port
 EXPOSE 8080
 
 # Start the application
-CMD ["bundle", "exec", "puma", "-C", "docker/puma.rb"]
+CMD ["bundle", "exec", "puma", "-C", "config/puma.rb"]

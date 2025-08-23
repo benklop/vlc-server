@@ -1,7 +1,7 @@
 require 'open3'
 
 class VLCStreamer
-  attr_reader :video_url, :process, :stdin, :stdout, :stderr, :thread
+  attr_reader :video_url, :process, :stdin, :stdout, :stderr
 
   # Initialize with the video URL to stream
   def initialize(video_url)
@@ -22,8 +22,7 @@ class VLCStreamer
 
     puts "Starting VLC with command: #{vlc_cmd.join(' ')}"
 
-    @stdin, @stdout, @stderr, @thread = Open3.popen3(*vlc_cmd)
-    @process = @thread
+    @stdin, @stdout, @stderr, @process = Open3.popen3(*vlc_cmd)
 
     { stdout: @stdout, process: @process }
   end
@@ -37,11 +36,13 @@ class VLCStreamer
     @stdin&.close rescue nil
 
     # Give VLC a moment to exit gracefully
-    unless @thread.join(5)
+    graceful_timeout = ENV.fetch('VLC_GRACEFUL_TIMEOUT', '5').to_i
+    unless @process.join(graceful_timeout)
       # Force kill if it doesn't exit gracefully
       Process.kill('TERM', @process.pid) rescue nil
-      @thread.join(2)
-      Process.kill('KILL', @process.pid) rescue nil if @thread.alive?
+      force_timeout = ENV.fetch('VLC_FORCE_TIMEOUT', '2').to_i
+      @process.join(force_timeout)
+      Process.kill('KILL', @process.pid) rescue nil if @process.alive?
     end
 
     # Close remaining streams
@@ -52,6 +53,5 @@ class VLCStreamer
     @stdin = nil
     @stdout = nil
     @stderr = nil
-    @thread = nil
   end
 end

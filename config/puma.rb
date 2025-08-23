@@ -1,29 +1,30 @@
-#!/usr/bin/env puma
-
-# Puma configuration for production
-port ENV.fetch('PORT', ENV.fetch('PORT', 8080)).to_i
+# Puma configuration for VLC Streaming Server
 environment ENV.fetch('RACK_ENV', 'production')
+port = ENV.fetch('PORT', 8080).to_i
+# Use single-mode (workers = 0) for simplicity and container optimization
+# Container orchestration handles scaling, not Puma clustering
+workers 0
 
-# Worker processes
-workers ENV.fetch('WEB_CONCURRENCY', 2).to_i
-
-# Thread pool
-threads_count = ENV.fetch('PUMA_THREADS', 5).to_i
+# Thread pool optimized for streaming workload
+# Streaming clients may hold connections for extended periods
+# Lower thread count for development, higher for production/Docker
+default_threads = ENV['RACK_ENV'] == 'development' ? 3 : 10
+threads_count = ENV.fetch('PUMA_THREADS', default_threads).to_i
 threads threads_count, threads_count
 
 # Preload application for better memory usage
 preload_app!
 
-# Allow puma to be restarted by `rails restart` command
-plugin :tmp_restart
-
-# Logging
-stdout_redirect '/dev/stdout', '/dev/stderr', true if ENV['RACK_ENV'] == 'production'
-
-on_worker_boot do
-  # Worker specific setup for fork-safe connections
+# Bind configuration
+if ENV['RACK_ENV'] == 'development'
+  # For local development, bind to localhost
+  port port
+else
+  # For Docker/production, bind to all interfaces
+  bind "tcp://0.0.0.0:#{port}"
 end
 
-on_restart do
-  puts 'Puma is restarting...'
+# Logging setup - only redirect stdout in Docker environments
+if ENV['RACK_ENV'] == 'production' && ENV['CONTAINER'] == 'docker'
+  stdout_redirect '/dev/stdout', '/dev/stderr', true
 end
