@@ -4,10 +4,25 @@ services:
     ports:
       - "${PORT:-8080}:${PORT:-8080}"
     environment:
-      - RACK_ENV=production
-      # Server configuration (can be overridden in .env file)
+      # Application Configuration
+      - RACK_ENV=${RACK_ENV:-production}
       - PORT=${PORT:-8080}
       - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1,0.0.0.0}
+
+      # YouTube Integration
+      - YOUTUBE_API_KEY=${YOUTUBE_API_KEY}
+
+      # Performance Tuning
+      - PUMA_THREADS=${PUMA_THREADS:-10}
+      - WEB_CONCURRENCY=${WEB_CONCURRENCY:-0}
+
+      # Streaming Configuration
+      - STREAM_CHUNK_SIZE=${STREAM_CHUNK_SIZE:-8192}
+      - STREAM_SELECT_TIMEOUT=${STREAM_SELECT_TIMEOUT:-0.1}
+
+      # VLC Process Management
+      - VLC_GRACEFUL_TIMEOUT=${VLC_GRACEFUL_TIMEOUT:-5}
+      - VLC_FORCE_TIMEOUT=${VLC_FORCE_TIMEOUT:-2}
     networks:
       - vlc-server
     restart: unless-stopped

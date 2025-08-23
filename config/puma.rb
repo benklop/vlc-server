@@ -1,9 +1,13 @@
 # Puma configuration for VLC Streaming Server
 environment ENV.fetch('RACK_ENV', 'production')
 port = ENV.fetch('PORT', 8080).to_i
-# Use single-mode (workers = 0) for simplicity and container optimization
+
+# Worker configuration
+# Use single-mode (workers = 0) for simplicity and container optimization by default
 # Container orchestration handles scaling, not Puma clustering
-workers 0
+# Override with WEB_CONCURRENCY environment variable for custom setups
+default_workers = ENV['RACK_ENV'] == 'development' ? 1 : 0
+workers ENV.fetch('WEB_CONCURRENCY', default_workers).to_i
 
 # Thread pool optimized for streaming workload
 # Streaming clients may hold connections for extended periods

@@ -140,6 +140,12 @@ cp .env.example .env
 # Edit .env with your configuration
 ```
 
+**Note:** All documented environment variables are properly passed through to the Docker container via `docker-compose.yml`. You can either:
+
+- Set environment variables in your shell before running `docker-compose up`
+- Create a `.env` file in the project root (recommended for persistent configuration)
+- Override specific variables: `YOUTUBE_API_KEY=your_key docker-compose up`
+
 ### Examples
 
 ```bash

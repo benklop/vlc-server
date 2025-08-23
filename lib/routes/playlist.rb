@@ -26,7 +26,7 @@ module Routes
         begin
           # Extract playlist ID from parameter
           playlist_id = extract_playlist_id(playlist_param)
-          
+
           if playlist_id.nil?
             halt 400, "Invalid playlist ID or URL format"
           end
@@ -44,7 +44,7 @@ module Routes
           # Set response headers for M3U playlist
           content_type 'application/vnd.apple.mpegurl'
           response.headers['Content-Disposition'] = "attachment; filename=\"playlist_#{playlist_id}.m3u\""
-          
+
           m3u_content
 
         rescue => e
@@ -105,15 +105,15 @@ module Routes
             end
 
             data = JSON.parse(response.body)
-            
+
             # Add items from this page
             data['items'].each do |item|
               video_id = item.dig('snippet', 'resourceId', 'videoId')
               title = item.dig('snippet', 'title')
-              
+
               # Skip deleted/private videos
               next if title == 'Deleted video' || title == 'Private video'
-              
+
               all_items << {
                 'video_id' => video_id,
                 'title' => title,
@@ -133,18 +133,18 @@ module Routes
         def generate_m3u_playlist(items, request)
           # Get the base URL for the streaming server
           base_url = "#{request.scheme}://#{request.host_with_port}"
-          
+
           m3u_lines = ['#EXTM3U']
-          
+
           items.each do |item|
             # Add track info
             m3u_lines << "#EXTINF:-1,#{item['title']}"
-            
+
             # Add stream URL that goes through our streaming endpoint
             stream_url = "#{base_url}/stream?video_url=#{CGI.escape(item['url'])}"
             m3u_lines << stream_url
           end
-          
+
           m3u_lines.join("\n") + "\n"
         end
       end
