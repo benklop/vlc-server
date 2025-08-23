@@ -37,3 +37,4 @@ services:
 networks:
   vlc-server:
     driver: bridge
+    
