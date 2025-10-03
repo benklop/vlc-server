@@ -165,7 +165,7 @@
       </div>
     <% else %>
       <div class="search-summary">
-        <strong>Found <%= @tracks.length %> live streams</strong>
+        <strong>Found <%= @tracks.length %> live <%= @tracks.length == 1 ? 'stream' : 'streams' %></strong>
         <% if @search_options %>
           <br>
           Filters: Min <%= format_subscriber_count(@search_options[:min_subscribers]) %> subscribers, 

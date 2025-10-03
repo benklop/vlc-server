@@ -210,7 +210,7 @@ class YouTubeClient
       # Build API request URL for live video search
       # Note: YouTube API requires a query parameter when searching for live streams
       # Use a broad query if none specified to get general live content
-      search_query = options[:query] || 'a|e|i|o|u'  # Broad query matching common vowels
+      search_query = options[:query] || 'LIVE' # Live in title or description
       
       params = {
         'part' => 'snippet',
