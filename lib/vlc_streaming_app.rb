@@ -8,6 +8,7 @@ require_relative 'routes/streaming'
 require_relative 'routes/health'
 require_relative 'routes/home'
 require_relative 'routes/youtube'
+require_relative 'routes/ui'
 
 class VLCStreamingApp < Sinatra::Base
   # Configure Sinatra to bind to all interfaces
@@ -28,6 +29,7 @@ class VLCStreamingApp < Sinatra::Base
   register Routes::Health
   register Routes::Home
   register Routes::Youtube
+  register Routes::UI
 
   # Class methods for cleanup (accessible from class-level blocks)
   class << self

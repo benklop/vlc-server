@@ -4,12 +4,12 @@ require_relative '../../youtube_client'
 
 module Routes
   module Youtube
-    module LiveSearch
+    module Search
       def self.registered(app)
         # Helper methods
         app.helpers do
           # Generate M3U for live stream search results
-          def generate_m3u_for_live_search(search_options = {})
+          def generate_m3u_for_search(search_options = {})
             begin
               youtube_client = YouTubeClient.new
               playlist_generator = PlaylistGenerator.new
@@ -34,7 +34,7 @@ module Routes
           end
 
           # Validate and parse search parameters
-          def parse_live_search_params(params)
+          def parse_search_params(params)
             options = {}
 
             # Max results (default 50, max 200)
@@ -141,14 +141,14 @@ module Routes
         # Custom live stream search with parameters
         app.get '/youtube/live/search' do
           # Parse and validate parameters
-          search_options = parse_live_search_params(params)
+          search_options = parse_search_params(params)
 
           # Set headers for m3u download
           content_type 'audio/x-mpegurl'
           attachment "live_streams_#{Time.now.strftime('%Y%m%d_%H%M%S')}.m3u"
 
           # Search and generate M3U
-          generate_m3u_for_live_search(search_options)
+          generate_m3u_for_search(search_options)
         end
 
         # Canned search: Popular English live streams
@@ -164,7 +164,7 @@ module Routes
           content_type 'audio/x-mpegurl'
           attachment "english_popular_live_#{Time.now.strftime('%Y%m%d_%H%M%S')}.m3u"
 
-          generate_m3u_for_live_search(search_options)
+          generate_m3u_for_search(search_options)
         end
 
         # Canned search: English gaming live streams
@@ -180,7 +180,7 @@ module Routes
           content_type 'audio/x-mpegurl'
           attachment "english_gaming_live_#{Time.now.strftime('%Y%m%d_%H%M%S')}.m3u"
 
-          generate_m3u_for_live_search(search_options)
+          generate_m3u_for_search(search_options)
         end
 
         # Canned search: English news live streams
@@ -196,7 +196,7 @@ module Routes
           content_type 'audio/x-mpegurl'
           attachment "english_news_live_#{Time.now.strftime('%Y%m%d_%H%M%S')}.m3u"
 
-          generate_m3u_for_live_search(search_options)
+          generate_m3u_for_search(search_options)
         end
 
         # Canned search: English music live streams
@@ -212,7 +212,7 @@ module Routes
           content_type 'audio/x-mpegurl'
           attachment "english_music_live_#{Time.now.strftime('%Y%m%d_%H%M%S')}.m3u"
 
-          generate_m3u_for_live_search(search_options)
+          generate_m3u_for_search(search_options)
         end
 
         # Get live stream search results as JSON (for API usage)
@@ -220,7 +220,7 @@ module Routes
           content_type :json
 
           # Parse and validate parameters
-          search_options = parse_live_search_params(params)
+          search_options = parse_search_params(params)
 
           begin
             youtube_client = YouTubeClient.new

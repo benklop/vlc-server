@@ -211,17 +211,18 @@ class YouTubeClient
         'part' => 'snippet',
         'eventType' => 'live',
         'type' => 'video',
-        'maxResults' => '50',
-        'order' => options[:order],
-        'regionCode' => options[:region_code],
-        'relevanceLanguage' => options[:relevance_language],
         'key' => @api_key
       }
 
       params['pageToken'] = next_page_token if next_page_token
 
       data = make_youtube_api_request('search', params)
-      break if data['items'].empty?
+      puts data.inspect
+
+      if data['items'].empty?
+        warn "No live streams found for search with parameters: #{params}"
+        break
+      end
 
       # Get channel IDs for batch channel info request
       channel_ids = data['items'].map { |item| item.dig('snippet', 'channelId') }.compact.uniq

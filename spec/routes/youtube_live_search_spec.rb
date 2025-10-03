@@ -1,7 +1,7 @@
 require_relative '../spec_helper'
-require_relative '../../lib/routes/youtube/live_search'
+require_relative '../../lib/routes/youtube/search'
 
-RSpec.describe 'YouTube Live Search Routes' do
+RSpec.describe 'YouTube Search Routes' do
   def app
     VLCStreamingApp
   end
