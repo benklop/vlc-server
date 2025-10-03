@@ -101,6 +101,34 @@
     </div>
   </div>
 
+  <div class="endpoint">
+    <h2>YouTube Live Stream Search</h2>
+    <p>Search for live YouTube streams with customizable filters. Requires <code>YOUTUBE_API_KEY</code> environment variable.</p>
+    
+    <div class="example">
+      <strong>Web Interface:</strong> <a href="/ui/search">Interactive Search Form</a>
+    </div>
+
+    <div class="example">
+      <strong>API Endpoints:</strong>
+      <div class="code">
+        GET /youtube/live/search - Custom search parameters<br>
+        GET /youtube/live/english_popular - Popular English streams<br>
+        GET /youtube/live/english_gaming - Gaming streams<br>
+        GET /youtube/live/english_news - News streams<br>
+        GET /youtube/live/english_music - Music streams
+      </div>
+    </div>
+
+    <div class="example">
+      <strong>Example API Usage:</strong>
+      <div class="code">
+        curl "http://localhost:<%= request.port %>/youtube/live/search?min_subscribers=100000&max_results=25"<br>
+        vlc "http://localhost:<%= request.port %>/youtube/live/english_popular"
+      </div>
+    </div>
+  </div>
+
   <h2>Health Check</h2>
   <p><a href="/health">Check server status</a></p>
 

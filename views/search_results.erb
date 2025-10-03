@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Search Results - VLC Streaming Server</title>
+  <style>
+    body { 
+      font-family: Arial, sans-serif; 
+      margin: 40px; 
+      background-color: #f8f9fa;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background-color: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .breadcrumb {
+      margin-bottom: 20px;
+      color: #666;
+    }
+    .breadcrumb a {
+      color: #007bff;
+      text-decoration: none;
+    }
+    .breadcrumb a:hover {
+      text-decoration: underline;
+    }
+    .search-summary {
+      background: #e7f3ff;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+      border-left: 4px solid #007bff;
+    }
+    .error {
+      background: #f8d7da;
+      color: #721c24;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+      border-left: 4px solid #dc3545;
+    }
+    .video-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .video-card {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      overflow: hidden;
+      background: white;
+      transition: box-shadow 0.2s;
+    }
+    .video-card:hover {
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .video-thumbnail {
+      width: 100%;
+      height: 200px;
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 14px;
+      position: relative;
+    }
+    .live-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #dc3545;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .video-info {
+      padding: 15px;
+    }
+    .video-title {
+      font-weight: bold;
+      margin-bottom: 8px;
+      line-height: 1.4;
+      color: #333;
+    }
+    .video-channel {
+      color: #666;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+    .video-stats {
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 12px;
+    }
+    .video-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 4px;
+      text-decoration: none;
+      font-size: 12px;
+      cursor: pointer;
+      display: inline-block;
+      text-align: center;
+    }
+    .btn-primary {
+      background-color: #007bff;
+      color: white;
+    }
+    .btn-secondary {
+      background-color: #6c757d;
+      color: white;
+    }
+    .btn-success {
+      background-color: #28a745;
+      color: white;
+    }
+    .btn:hover {
+      opacity: 0.9;
+    }
+    .no-results {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+    .new-search-btn {
+      background-color: #007bff;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      text-decoration: none;
+      display: inline-block;
+      margin-bottom: 20px;
+    }
+    .new-search-btn:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="breadcrumb">
+      <a href="/">← Home</a> / <a href="/ui/search">← New Search</a>
+    </div>
+
+    <h1>Search Results</h1>
+
+    <a href="/ui/search" class="new-search-btn">← New Search</a>
+
+    <% if @error %>
+      <div class="error">
+        <strong>Error:</strong> <%= @error %>
+      </div>
+    <% else %>
+      <div class="search-summary">
+        <strong>Found <%= @tracks.length %> live <%= @tracks.length == 1 ? 'stream' : 'streams' %></strong>
+        <% if @search_options %>
+          <br>
+          Filters: Min <%= format_subscriber_count(@search_options[:min_subscribers]) %> subscribers, 
+          <%= @search_options[:region_code] %> region, 
+          <%= @search_options[:relevance_language] %> language, 
+          sorted by <%= @search_options[:order] %>
+        <% end %>
+      </div>
+    <% end %>
+
+    <% if @tracks && @tracks.length > 0 %>
+      <div class="video-grid">
+        <% @tracks.each do |track| %>
+          <div class="video-card">
+            <div class="video-thumbnail">
+              <div class="live-badge">🔴 LIVE</div>
+              <div>YouTube Live Stream</div>
+            </div>
+            <div class="video-info">
+              <div class="video-title"><%= track['title'] %></div>
+              <div class="video-channel">
+                <strong><%= track['artist'] %></strong>
+                <% if track['channel_subscriber_count'] %>
+                  • <%= format_subscriber_count(track['channel_subscriber_count']) %> subscribers
+                <% end %>
+              </div>
+              <% if track['published_at'] %>
+                <div class="video-stats">
+                  Started: <%= time_ago(track['published_at']) %>
+                </div>
+              <% end %>
+              <div class="video-actions">
+                <a href="<%= get_stream_url(track['url']) %>" class="btn btn-primary" target="_blank">
+                  🎬 Stream via VLC
+                </a>
+                <a href="<%= track['url'] %>" class="btn btn-secondary" target="_blank">
+                  📺 View on YouTube
+                </a>
+                <a href="/youtube/live/search.json?channel_id=<%= track['channel_id'] %>" class="btn btn-success" target="_blank">
+                  📋 Get JSON
+                </a>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% elsif !@error %>
+      <div class="no-results">
+        <h3>No live streams found</h3>
+        <p>Try adjusting your search criteria or check back later.</p>
+        <a href="/ui/search" class="new-search-btn">Try Different Search</a>
+      </div>
+    <% end %>
+  </div>
+</body>
+</html>
