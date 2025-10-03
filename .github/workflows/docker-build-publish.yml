@@ -45,6 +45,7 @@ jobs:
       contents: read
       packages: write
       id-token: write # Needed for artifact attestation
+      attestations: write # Needed for artifact attestation
 
     steps:
       - name: Checkout code
