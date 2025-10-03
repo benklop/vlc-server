@@ -63,6 +63,11 @@ module Routes
             if params['order'] && %w[date rating relevance title viewCount].include?(params['order'])
               options[:order] = params['order']
             end
+            
+            # Search query (optional, for filtering live streams by topic)
+            if params['q'] && !params['q'].strip.empty?
+              options[:query] = params['q'].strip
+            end
 
             options
           end

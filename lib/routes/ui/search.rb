@@ -88,6 +88,11 @@ module Routes
             else
               options[:order] = 'relevance'
             end
+            
+            # Search query (optional, for filtering live streams by topic)
+            if params['q'] && !params['q'].strip.empty?
+              options[:query] = params['q'].strip
+            end
 
             options
           end

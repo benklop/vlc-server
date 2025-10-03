@@ -197,7 +197,8 @@ class YouTubeClient
       region_code: 'US',
       relevance_language: 'en',
       min_subscribers: 100000,
-      order: 'relevance'  # Options: date, rating, relevance, title, viewCount
+      order: 'relevance',  # Options: date, rating, relevance, title, viewCount
+      query: nil  # Optional search query
     }.merge(options)
 
     all_items = []
@@ -207,22 +208,27 @@ class YouTubeClient
 
     loop do
       # Build API request URL for live video search
+      # Note: YouTube API requires a query parameter when searching for live streams
+      # Use a broad query if none specified to get general live content
+      search_query = options[:query] || 'a|e|i|o|u'  # Broad query matching common vowels
+      
       params = {
         'part' => 'snippet',
         'eventType' => 'live',
         'type' => 'video',
+        'maxResults' => '50',
+        'order' => options[:order],
+        'regionCode' => options[:region_code],
+        'relevanceLanguage' => options[:relevance_language],
+        'q' => search_query,
         'key' => @api_key
       }
 
       params['pageToken'] = next_page_token if next_page_token
 
       data = make_youtube_api_request('search', params)
-      puts data.inspect
-
-      if data['items'].empty?
-        warn "No live streams found for search with parameters: #{params}"
-        break
-      end
+      
+      break if data['items'].empty?
 
       # Get channel IDs for batch channel info request
       channel_ids = data['items'].map { |item| item.dig('snippet', 'channelId') }.compact.uniq
